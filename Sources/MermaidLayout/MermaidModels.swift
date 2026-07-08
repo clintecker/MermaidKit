@@ -589,13 +589,18 @@ public struct GitGraph: Hashable, Sendable {
         public let isMerge: Bool
         /// Indices into `commits` of this commit's parents (0–2).
         public let parents: [Int]
+        /// True when the author wrote an explicit `id:`; auto-generated ids
+        /// (`c<n>`, `merge<n>`) exist for identity but are not drawn.
+        public let hasExplicitID: Bool
         /// Memberwise initializer.
-        public init(id: String, branch: String, tag: String?, isMerge: Bool, parents: [Int]) {
+        public init(id: String, branch: String, tag: String?, isMerge: Bool,
+                    parents: [Int], hasExplicitID: Bool = true) {
             self.id = id
             self.branch = branch
             self.tag = tag
             self.isMerge = isMerge
             self.parents = parents
+            self.hasExplicitID = hasExplicitID
         }
     }
 

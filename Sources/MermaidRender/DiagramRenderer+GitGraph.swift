@@ -55,8 +55,10 @@ extension DiagramRenderer {
             }
             context.restoreGState()
 
-            drawText(commit.id, center: CGPoint(x: commit.center.x, y: commit.center.y + 16),
-                     size: 8.5, color: theme.secondaryTextColor, in: context)
+            if let label = commit.label {
+                drawText(label, center: CGPoint(x: commit.center.x, y: commit.center.y + 16),
+                         size: 8.5, color: theme.secondaryTextColor, in: context)
+            }
             if let tag = commit.tag {
                 let measured = measure(tag, size: 8.5)
                 let chip = CGRect(x: commit.center.x - measured.width / 2 - 4,

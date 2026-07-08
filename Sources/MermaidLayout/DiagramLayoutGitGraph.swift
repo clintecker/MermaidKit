@@ -21,15 +21,35 @@ extension DiagramLayoutEngine {
         let topMargin = margin + 14   // room for a tag above the first lane
 
         func lane(_ branch: String) -> Int { graph.branches.firstIndex(of: branch) ?? 0 }
-        func x(_ order: Int) -> CGFloat { gutter + CGFloat(order) * commitGap + commitGap / 2 }
         func y(_ branch: String) -> CGFloat { topMargin + CGFloat(lane(branch)) * laneGap }
+
+        // Column positions adapt to label widths: consecutive commits ON THE
+        // SAME LANE must sit far enough apart that their id labels (drawn
+        // centred under the dots) clear each other — a fixed column pitch
+        // collides the moment ids are real words. Cross-lane neighbours don't
+        // constrain each other (their labels live on different rows).
+        let labels: [String?] = graph.commits.map { $0.hasExplicitID ? $0.id : nil }
+        let widths: [CGFloat] = labels.map { $0.map { measure($0, labelFontSize).width } ?? 0 }
+        var xs: [CGFloat] = []
+        var lastOnLane: [Int: Int] = [:]
+        for (order, commit) in graph.commits.enumerated() {
+            var x = order == 0 ? gutter + commitGap / 2 : xs[order - 1] + commitGap
+            if let prev = lastOnLane[lane(commit.branch)] {
+                let needed = (widths[prev] + widths[order]) / 2 + 12
+                x = max(x, xs[prev] + max(commitGap, needed))
+            }
+            xs.append(x)
+            lastOnLane[lane(commit.branch)] = order
+        }
+        func x(_ order: Int) -> CGFloat { xs[order] }
 
         var commits: [GitGraphLayout.Commit] = []
         for (order, commit) in graph.commits.enumerated() {
             commits.append(GitGraphLayout.Commit(
                 center: CGPoint(x: x(order), y: y(commit.branch)),
                 colorIndex: lane(commit.branch),
-                id: commit.id, tag: commit.tag, isMerge: commit.isMerge))
+                id: commit.id, label: labels[order],
+                tag: commit.tag, isMerge: commit.isMerge))
         }
 
         // Edges from each commit to its parents, coloured by the child's lane.
@@ -93,7 +113,14 @@ extension DiagramLayoutEngine {
                 colorIndex: index)
         }
 
-        let width = x(max(graph.commits.count - 1, 0)) + commitGap / 2 + margin
+        // The canvas must cover the widest of: the last column plus its half
+        // pitch, and every id label's right edge (labels centre under dots and
+        // can be wider than the column pitch).
+        var rightEdge = graph.commits.isEmpty ? gutter : x(graph.commits.count - 1) + commitGap / 2
+        for (order, _) in graph.commits.enumerated() {
+            rightEdge = max(rightEdge, x(order) + widths[order] / 2)
+        }
+        let width = rightEdge + margin
         let height = topMargin + CGFloat(max(graph.branches.count - 1, 0)) * laneGap + dotRadius + 22 + margin
         return GitGraphLayout(
             size: CGSize(width: width, height: height),

@@ -32,10 +32,12 @@ extension MermaidParser {
             switch command {
             case "commit":
                 let parent = headOfBranch[current]
-                let id = field("id", in: line) ?? { autoID += 1; return "c\(autoID)" }()
+                let explicit = field("id", in: line)
+                let id = explicit ?? { autoID += 1; return "c\(autoID)" }()
                 commits.append(GitGraph.Commit(
                     id: id, branch: current, tag: field("tag", in: line),
-                    isMerge: false, parents: parent.map { [$0] } ?? []))
+                    isMerge: false, parents: parent.map { [$0] } ?? [],
+                    hasExplicitID: explicit != nil))
                 headOfBranch[current] = commits.count - 1
 
             case "branch":
@@ -60,7 +62,8 @@ extension MermaidParser {
                 autoID += 1
                 commits.append(GitGraph.Commit(
                     id: field("id", in: line) ?? "merge\(autoID)", branch: current,
-                    tag: field("tag", in: line), isMerge: true, parents: parents))
+                    tag: field("tag", in: line), isMerge: true, parents: parents,
+                    hasExplicitID: field("id", in: line) != nil))
                 headOfBranch[current] = commits.count - 1
 
             default:

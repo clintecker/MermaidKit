@@ -38,6 +38,21 @@ extension DiagramScene {
                 text: lane.name,
                 frame: CGRect(x: lane.point.x, y: lane.point.y - 7, width: w, height: 14))
         }
+        // Commit id labels (explicit ones only — they're what the renderer
+        // draws, centred 16pt below each dot). Lowering them is what lets the
+        // linter SEE id-label collisions; they were invisible to it before,
+        // which is how a fixed column pitch shipped colliding labels.
+        for commit in layout.commits {
+            guard let label = commit.label, !label.isEmpty else { continue }
+            let w = DiagramScene.estimatedLabelSize(label).width
+            labels.append(DiagramScene.Label(
+                text: label,
+                frame: CGRect(
+                    x: commit.center.x - w / 2,
+                    y: commit.center.y + 16 - 7,
+                    width: w,
+                    height: 14)))
+        }
         for commit in layout.commits {
             guard let tag = commit.tag, !tag.isEmpty else { continue }
             let w = DiagramScene.estimatedLabelSize(tag).width

@@ -483,6 +483,9 @@ public struct GitGraphLayout: Sendable {
         /// The commit's lane: index into `laneLabels`, and its palette slot.
         public let colorIndex: Int
         public let id: String
+        /// Text drawn under the dot — the author's explicit `id:` only;
+        /// auto-generated ids are identity, not content.
+        public let label: String?
         public let tag: String?
         public let isMerge: Bool
     }
