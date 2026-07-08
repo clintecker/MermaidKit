@@ -800,6 +800,7 @@ public enum MermaidParser {
         var messages: [SequenceDiagram.Message] = []
 
         var notes: [SequenceDiagram.Note] = []
+        var declaredKind: [String: SequenceDiagram.Participant.Kind] = [:]
         var fragments: [SequenceDiagram.Fragment] = []
         var boxes: [SequenceDiagram.Box] = []
         var openBox: (label: String?, members: [String])?
@@ -836,15 +837,28 @@ public enum MermaidParser {
                 var isActor = false
                 if declaration.hasPrefix("participant ") { declaration = String(declaration.dropFirst(12)) }
                 else if declaration.hasPrefix("actor ") { declaration = String(declaration.dropFirst(6)); isActor = true }
+                // Typed heads: `participant B@{ "type": "database" }`.
+                var kind: SequenceDiagram.Participant.Kind? = isActor ? .actor : nil
+                if let at = declaration.range(of: "@{") {
+                    let spec = String(declaration[at.upperBound...])
+                    if let typeRange = spec.range(of: "type") {
+                        let value = spec[typeRange.upperBound...]
+                            .trimmingCharacters(in: CharacterSet(charactersIn: " :\"'}"))
+                        if let parsed = SequenceDiagram.Participant.Kind(
+                            rawValue: value.lowercased()) { kind = parsed }
+                    }
+                    declaration = String(declaration[..<at.lowerBound]).trimmingCharacters(in: .whitespaces)
+                }
                 let id: String
                 if let asRange = declaration.range(of: " as ") {
                     id = String(declaration[..<asRange.lowerBound]).trimmingCharacters(in: .whitespaces)
                     let label = String(declaration[asRange.upperBound...]).trimmingCharacters(in: .whitespaces)
-                    note(id, label: label, isActor: isActor)
+                    note(id, label: label, isActor: kind == .actor)
                 } else {
                     id = declaration.trimmingCharacters(in: .whitespaces)
-                    note(id, isActor: isActor)
+                    note(id, isActor: kind == .actor)
                 }
+                if let kind { declaredKind[id] = kind }
                 openBox?.members.append(id)
                 continue
             }
@@ -1002,7 +1016,11 @@ public enum MermaidParser {
         while let top = openFragments.popLast() { events.append(.close(top)) }
         if let box = openBox { boxes.append(.init(label: box.label, memberIDs: box.members)) }
         return SequenceDiagram(
-            participants: order.compactMap { participants[$0] },
+            participants: order.compactMap { id -> SequenceDiagram.Participant? in
+                guard var participant = participants[id] else { return nil }
+                if let kind = declaredKind[id] { participant.kind = kind }
+                return participant
+            },
             boxes: boxes,
             notes: notes,
             fragments: fragments,

@@ -52,6 +52,74 @@ extension DiagramRenderer {
         }
     }
 
+    /// Small head glyphs for typed participants (database cylinder, queue,
+    /// collections, and the UML robustness trio), centered above the label.
+    private static func drawParticipantGlyph(
+        _ kind: String, frame: CGRect, theme: DiagramTheme,
+        stroke: PlatformColor, in context: CGContext
+    ) {
+        let cx = frame.midX
+        let top = frame.minY + 2
+        let fill = theme.accent.withAlphaComponent(0.10)
+        context.setFillColor(resolvedCGColor(fill))
+        context.setStrokeColor(resolvedCGColor(stroke))
+        context.setLineWidth(1.2)
+        switch kind {
+        case "database":
+            let body = CGRect(x: cx - 11, y: top + 3, width: 22, height: 18)
+            context.addRect(body.insetBy(dx: 0, dy: 3))
+            context.fillPath()
+            context.strokeEllipse(in: CGRect(x: cx - 11, y: top, width: 22, height: 7))
+            context.beginPath()
+            context.move(to: CGPoint(x: cx - 11, y: top + 3.5))
+            context.addLine(to: CGPoint(x: cx - 11, y: top + 21))
+            context.move(to: CGPoint(x: cx + 11, y: top + 3.5))
+            context.addLine(to: CGPoint(x: cx + 11, y: top + 21))
+            context.strokePath()
+            context.strokeEllipse(in: CGRect(x: cx - 11, y: top + 17, width: 22, height: 7))
+        case "queue":
+            context.strokeEllipse(in: CGRect(x: cx + 8, y: top + 4, width: 8, height: 16))
+            context.beginPath()
+            context.move(to: CGPoint(x: cx - 12, y: top + 4))
+            context.addLine(to: CGPoint(x: cx + 12, y: top + 4))
+            context.move(to: CGPoint(x: cx - 12, y: top + 20))
+            context.addLine(to: CGPoint(x: cx + 12, y: top + 20))
+            context.strokePath()
+            context.addPath(CGPath(ellipseIn: CGRect(x: cx - 16, y: top + 4, width: 8, height: 16), transform: nil))
+            context.drawPath(using: .fillStroke)
+        case "collections":
+            context.addRect(CGRect(x: cx - 8, y: top + 2, width: 18, height: 14))
+            context.drawPath(using: .fillStroke)
+            context.setFillColor(resolvedCGColor(theme.canvas))
+            context.addRect(CGRect(x: cx - 12, y: top + 7, width: 18, height: 14))
+            context.drawPath(using: .fillStroke)
+        case "boundary":
+            context.strokeEllipse(in: CGRect(x: cx - 8, y: top + 3, width: 18, height: 18))
+            context.beginPath()
+            context.move(to: CGPoint(x: cx - 14, y: top + 3))
+            context.addLine(to: CGPoint(x: cx - 14, y: top + 21))
+            context.move(to: CGPoint(x: cx - 14, y: top + 12))
+            context.addLine(to: CGPoint(x: cx - 8, y: top + 12))
+            context.strokePath()
+        case "control":
+            context.strokeEllipse(in: CGRect(x: cx - 9, y: top + 3, width: 18, height: 18))
+            context.beginPath()
+            context.move(to: CGPoint(x: cx - 2, y: top))
+            context.addLine(to: CGPoint(x: cx + 3, y: top + 3))
+            context.addLine(to: CGPoint(x: cx - 2, y: top + 6))
+            context.strokePath()
+        case "entity":
+            context.addPath(CGPath(ellipseIn: CGRect(x: cx - 9, y: top + 2, width: 18, height: 18), transform: nil))
+            context.drawPath(using: .fillStroke)
+            context.beginPath()
+            context.move(to: CGPoint(x: cx - 11, y: top + 22))
+            context.addLine(to: CGPoint(x: cx + 11, y: top + 22))
+            context.strokePath()
+        default:
+            break
+        }
+    }
+
     static func draw(_ layout: SequenceLayout, theme: DiagramTheme, in context: CGContext) {
         let stroke = theme.ink.withAlphaComponent(0.35)
         let hairline = theme.ink.withAlphaComponent(0.18)
@@ -174,6 +242,11 @@ extension DiagramRenderer {
                 context.addLine(to: CGPoint(x: cx + 5, y: top + 24))
                 context.strokePath()
                 drawText(head.label, center: CGPoint(x: cx, y: head.frame.maxY + 7),
+                         size: 10.5, weight: .medium, color: theme.ink, in: context)
+            } else if head.kind != "participant" {
+                drawParticipantGlyph(head.kind, frame: head.frame, theme: theme,
+                                     stroke: stroke, in: context)
+                drawText(head.label, center: CGPoint(x: head.frame.midX, y: head.frame.maxY + 7),
                          size: 10.5, weight: .medium, color: theme.ink, in: context)
             } else {
                 fillStrokeBox(head.frame, radius: 6, fill: theme.accent.withAlphaComponent(0.06), stroke: stroke, in: context)

@@ -86,11 +86,12 @@ mermaid.js, and the failure mode is deliberate:
   lines (never phantom bars) and `y/M/s` durations; radar positional
   values; packet `+N` relative widths; treemap `:::class`; gitGraph
   `cherry-pick`; sequence notes, `actor` stick
-  figures, activation bars, `box` groupings, combined fragments (`loop`/`alt`/`opt`/`par`/`critical`/
+  figures, typed participants (`@{ "type": "database" }`), create/destroy,
+  `<br/>` line breaks, activation bars, `box` groupings, combined fragments (`loop`/`alt`/`opt`/`par`/`critical`/
   `break`, nested) with `rect` bands, true arrow heads (`-x`, `-)`,
   `<<->>`), autonumber badges; class generics `~T~`; ER attribute keys;
-  state composites, forks, choices. Some still doesn't (sequence
-  create/destroy, flowchart subgraph boxes, `@{ shape }`). If your diagram parses
+  state composites, forks, choices. Some still doesn't (flowchart
+  subgraph boxes, flowchart `@{ shape }`). If your diagram parses
   but drops something you wrote, that's a gap: please
   [open an issue](#reporting-a-diagram-that-renders-wrong) with the source.
 

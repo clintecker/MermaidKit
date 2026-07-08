@@ -76,14 +76,18 @@ public struct SequenceLayout: Sendable {
         public var frame: CGRect
         /// Drawn as a stick figure (declared with `actor`) instead of a box.
         public let isActor: Bool
+        /// Head glyph kind (raw value of `SequenceDiagram.Participant.Kind`).
+        public var kind: String = "participant"
         /// Where this lifeline stops (a `destroy` row); nil = the shared bottom.
         public var lifelineEndY: CGFloat?
         /// Draw the destruction cross at `lifelineEndY`.
         public var showsDestroyCross: Bool = false
         /// X of the participant's vertical lifeline (the head's center).
         public var lifelineX: CGFloat { frame.midX }
-        public init(label: String, frame: CGRect, isActor: Bool = false) {
+        public init(label: String, frame: CGRect, isActor: Bool = false,
+                    kind: String = "participant") {
             self.label = label; self.frame = frame; self.isActor = isActor
+            self.kind = kind
         }
     }
 

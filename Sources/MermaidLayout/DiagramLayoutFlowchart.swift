@@ -707,7 +707,8 @@ extension DiagramLayoutEngine {
             heads.append(SequenceLayout.Head(
                 label: participant.label,
                 frame: CGRect(x: x, y: headY, width: width, height: headHeight),
-                isActor: participant.isActor
+                isActor: participant.isActor,
+                kind: participant.kind.rawValue
             ))
             x += width + 24
         }

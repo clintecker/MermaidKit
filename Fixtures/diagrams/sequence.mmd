@@ -3,7 +3,7 @@ sequenceDiagram
     participant View as MermaidView
     box MermaidKit
         participant Rend as MermaidRenderer
-        participant Cache as RenderCache
+        participant Cache@{ "type": "database" }
         participant Parse as MermaidParser
         participant Lay as DiagramLayoutEngine
         participant Scene as DiagramScene

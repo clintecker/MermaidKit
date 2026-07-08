@@ -100,11 +100,19 @@ public struct StateDiagram: Hashable, Sendable {
 public struct SequenceDiagram: Hashable, Sendable {
     /// A lifeline; `id` is the Mermaid identifier.
     public struct Participant: Hashable, Sendable, Identifiable {
+        /// Head glyph kinds (mermaid v11 `@{ "type": "..." }`, matching
+        /// websequencediagrams' classic participant types).
+        public enum Kind: String, Hashable, Sendable {
+            case participant, actor, database, queue, collections
+            case boundary, control, entity
+        }
         public let id: String
         /// Display text; the `as` alias when declared, else the id.
         public var label: String
         /// Declared with `actor` — drawn as a stick figure, not a box.
         public var isActor: Bool = false
+        /// Head glyph; `.actor` mirrors `isActor` (kept for compatibility).
+        public var kind: Kind = .participant
     }
 
     /// A `Note right of A: ...` / `Note over A,B: ...` annotation, anchored

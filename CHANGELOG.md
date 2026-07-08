@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.0
+
+Sequence lifecycle and typography — the remaining Tier-1 items, validated
+against websequencediagrams.com's classic feature set (all in mermaid
+syntax; no extensions):
+
+- `create participant/actor X` places the head at its creation row;
+  `destroy X` ends the lifeline with the classic cross (open activation
+  bars die with it).
+- `<br/>` (and `<br>`) line breaks in messages and notes: rows grow,
+  note boxes size to their widest line, message labels stack above the
+  arrow, and column sizing measures lines rather than raw strings.
+- Typed participants — `participant DB@{ "type": "database" }` — render
+  head glyphs for database, queue, collections, boundary, control, and
+  entity (websequencediagrams' participant types, absorbed by mermaid
+  v11).
+
 ## 0.7.0
 
 Sequence diagrams reach structural mermaid-parity for everyday syntax —

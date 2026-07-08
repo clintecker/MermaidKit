@@ -435,3 +435,15 @@ extension ParserHonestyTests {
         XCTAssertGreaterThan(layout.notes[0].frame.height, 24, "two-line note grows its box")
     }
 }
+
+extension ParserHonestyTests {
+    func testTypedParticipants() throws {
+        let s = try seqPub("""
+        participant DB@{ "type": "database" }
+        participant Q@{ "type" : "queue" }
+        DB->>Q: enqueue
+        """)
+        XCTAssertEqual(s.participants.first(where: { $0.id == "DB" })?.kind, .database)
+        XCTAssertEqual(s.participants.first(where: { $0.id == "Q" })?.kind, .queue)
+    }
+}
