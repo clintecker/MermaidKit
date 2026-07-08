@@ -56,6 +56,14 @@ public enum MermaidRenderer {
         DiagramRenderer.attachmentString(source: source, theme: theme, spacing: spacing)
     }
 
+    /// The diagram as single-page vector PDF data — same layout and drawing
+    /// as ``image(source:theme:spacing:)``, but resolution-independent: the
+    /// export/print path. Nil when the source doesn't parse.
+    public static func pdfData(source: String, theme: DiagramTheme,
+                               spacing: DiagramSpacing = .regular) -> Data? {
+        DiagramRenderer.pdfData(source: source, theme: theme, spacing: spacing)
+    }
+
     /// The CoreText measurer the renderer itself uses — pass to
     /// `DiagramLayoutEngine.layout`/`DiagramScene.lower` so layout geometry and
     /// lint checks see the same text metrics the render does.
