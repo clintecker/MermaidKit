@@ -1,11 +1,12 @@
 # MermaidKit brochure site — design brief
 
 Context package for a design session building the GitHub Pages site.
-Written against MermaidKit v0.5.0. Every fact here was verified against the
+Written against MermaidKit v0.8.0. Every fact here was verified against the
 code; cite them as written and don't embellish.
 
 - Repo: https://github.com/clintecker/MermaidKit
-- Latest release: v0.5.0 (all 30 mermaid.js diagram types)
+- Latest release: v0.8.0 (all 30 mermaid.js diagram types; sequence
+  diagrams at full structural mermaid-parity)
 - Site will live at: https://clintecker.github.io/MermaidKit/
   (GitHub Pages, served from the `docs/` folder on `main` — the finished
   site is an `index.html` placed in `docs/`, referencing images relatively
@@ -77,7 +78,7 @@ shape:
 
 Install:
 ```swift
-.package(url: "https://github.com/clintecker/MermaidKit.git", from: "0.5.0")
+.package(url: "https://github.com/clintecker/MermaidKit.git", from: "0.8.0")
 ```
 
 ### 3. Adaptable: built to meet people where they are
@@ -110,11 +111,11 @@ never hand-edit. Each exists in light and dark; serve both via `<picture>`
 with `prefers-color-scheme`.
 
 **Hero** (the render pipeline as a sankey, ~2200px wide):
-- https://raw.githubusercontent.com/clintecker/MermaidKit/v0.5.0/docs/images/hero-light.png
-- https://raw.githubusercontent.com/clintecker/MermaidKit/v0.5.0/docs/images/hero-dark.png
+- https://raw.githubusercontent.com/clintecker/MermaidKit/v0.8.0/docs/images/hero-light.png
+- https://raw.githubusercontent.com/clintecker/MermaidKit/v0.8.0/docs/images/hero-dark.png
 
 **Per-type gallery** (30 types × 2 appearances, max 2000px wide). Pattern:
-`https://raw.githubusercontent.com/clintecker/MermaidKit/v0.5.0/docs/images/types/<name>.png`
+`https://raw.githubusercontent.com/clintecker/MermaidKit/v0.8.0/docs/images/types/<name>.png`
 (append `-dark` before `.png` for dark). Names and what each self-portrait
 shows:
 
@@ -137,7 +138,7 @@ shows:
 | radar | quality dimensions by release |
 | requirement | real quality requirements traced to their verifying tests |
 | sankey | sources flowing through the pipeline (same family as hero) |
-| sequence | MermaidView's render call flow with cache hit/miss |
+| sequence | MermaidView's render flow: actor, typed database head, box band, activation bar, note, alt/else fragment |
 | state | a source's lifecycle with the light/dark raster fork |
 | timeline | project history |
 | treemap | the source tree by lines |
