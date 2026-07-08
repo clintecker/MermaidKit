@@ -125,7 +125,7 @@ line-by-line against the code. The site must keep that register:
 2. **Gallery** — the 23 per-type images (this is the killer section; the
    site exists to show these). Light/dark aware via `<picture>`.
 3. **How it's verified** — the geometry-linter story. This is the section
-   that makes HN/engineers respect it.
+   that earns engineers' respect.
 4. **Get started** — install + the three API entry points + theming.
 5. **Footer** — GitHub, release, license, "extracted from Quoin".
 
@@ -145,5 +145,4 @@ colorful; the chrome shouldn't compete).
 
 - Domain: default `clintecker.github.io/MermaidKit` or a custom domain?
 - Logo/wordmark: want one, or type-only?
-- Should the site include the Show HN draft's framing (a draft exists) or
-  stay evergreen?
+- Should the site lead with launch-announcement framing or stay evergreen?
