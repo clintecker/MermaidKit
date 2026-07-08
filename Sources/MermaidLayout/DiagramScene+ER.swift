@@ -26,7 +26,7 @@ extension DiagramScene {
         // linter can check them for collisions with boxes and each other.
         let labels: [Label] = layout.edges.compactMap { edge in
             guard !edge.label.isEmpty else { return nil }
-            let mid = polylineMidpoint(edge.points)
+            let mid = edge.labelAnchor ?? polylineMidpoint(edge.points)
             let w = DiagramScene.estimatedLabelSize(edge.label).width
             return Label(
                 text: edge.label,

@@ -27,10 +27,14 @@ final class LayoutMetricsTests: XCTestCase {
     }
 
     func testLayeredFamilyEdgeLengthBudgets() throws {
-        // Measured after network-simplex layering (+10% headroom for benign
-        // drift). Longest-path layering blows these by 30%+.
-        for (name, budget) in [("class", CGFloat(2300)), ("state", 2750),
-                               ("er", 1700), ("flowchart", 4700)] {
+        // Measured after network-simplex layering AND label-space reservation
+        // (+10% headroom). Label reservation deliberately spends edge length —
+        // grown inter-layer gaps and widened label channels — to buy readable,
+        // non-colliding edge labels; the pre-reservation floors were
+        // class 2077 / er 1503 / state 2455. Longest-path layering blows the
+        // budgets regardless.
+        for (name, budget) in [("class", CGFloat(2600)), ("state", 3450),
+                               ("er", 1950), ("flowchart", 4700)] {
             let length = try edgeLength(name)
             XCTAssertLessThan(length, budget, "\(name): total edge length regressed")
         }

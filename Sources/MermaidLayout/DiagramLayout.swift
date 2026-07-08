@@ -535,6 +535,9 @@ public struct ClassLayout: Sendable {
         public let points: [CGPoint]
         public let kind: ClassDiagram.RelationKind
         public let label: String?
+        /// Where layout RESERVED space for the label (a widened median dummy
+        /// or the grown inter-layer gap); renderers should draw it here.
+        public let labelAnchor: CGPoint?
     }
 
     public let size: CGSize
@@ -571,6 +574,8 @@ public struct ERLayout: Sendable {
         public let label: String
         /// Identifying relationship (Mermaid `--`) vs non-identifying (`..`).
         public let identifying: Bool
+        /// Where layout reserved space for the label, when it did.
+        public let labelAnchor: CGPoint?
     }
 
     public let size: CGSize
@@ -609,6 +614,8 @@ public struct StateLayout: Sendable {
         public let end: CGPoint
         public let points: [CGPoint]
         public let label: String?
+        /// Where layout reserved space for the label, when it did.
+        public let labelAnchor: CGPoint?
     }
 
     public let size: CGSize
@@ -710,8 +717,9 @@ public enum DiagramLayoutEngine {
         routingEdges: [(from: String, to: String)],
         layerGap: CGFloat,
         nodeGap: CGFloat,
-        margin: CGFloat
-    ) -> (frames: [String: CGRect], size: CGSize, routes: [[CGPoint]]) {
+        margin: CGFloat,
+        edgeLabelSizes: [CGSize?]? = nil
+    ) -> (frames: [String: CGRect], size: CGSize, routes: [[CGPoint]], labelAnchors: [CGPoint?]) {
         let layerBack = backEdgeIndices(ids: ids, edges: layeringEdges)
         let forward = layeringEdges.enumerated().filter { !layerBack.contains($0.offset) }.map(\.element)
         let layerOf = assignLayers(ids: ids, edges: forward)
@@ -724,6 +732,20 @@ public enum DiagramLayoutEngine {
         var chains: [[String]] = []
         var segmentEdges: [(String, String)] = []
         var dummies: Set<String> = []
+        var labelDummyOfEdge: [Int: String] = [:]
+        // Labeled edges between ADJACENT layers carry their text in the
+        // inter-layer gap; grow each gap to fit the tallest such label so the
+        // chip never crowds the boxes above or below it.
+        var gapExtra = [CGFloat](repeating: 0, count: max(layerCount, 1))
+        if let edgeLabelSizes {
+            for (index, edge) in routingEdges.enumerated() {
+                guard let labelSize = edgeLabelSizes[index],
+                      let lu = layerOf[edge.from], let lv = layerOf[edge.to],
+                      abs(lu - lv) == 1 else { continue }
+                let gap = min(lu, lv)
+                gapExtra[gap] = max(gapExtra[gap], labelSize.height + 6)
+            }
+        }
         for (index, edge) in routingEdges.enumerated() {
             guard let lu = layerOf[edge.from], let lv = layerOf[edge.to] else { chains.append([]); continue }
             let lo = min(lu, lv), hi = max(lu, lv)
@@ -733,10 +755,22 @@ public enum DiagramLayoutEngine {
                 continue
             }
             var midByLayer: [(layer: Int, id: String)] = []
+            // ELK-style label reservation: the MEDIAN dummy of a labeled edge
+            // is widened to the label's size, so ordering and Brandes-Köpf
+            // reserve real horizontal space for the text instead of the label
+            // being squeezed in afterwards. That dummy's centre becomes the
+            // edge's label anchor.
+            let labelSize = edgeLabelSizes?[index] ?? nil
+            let medianLayer = (lo + 1 + hi - 1) / 2
             for layer in (lo + 1)...(hi - 1) {
                 let dummy = "\u{a7}b\(index).\(layer)"
                 layers[layer].append(dummy)
-                allSizes[dummy] = CGSize(width: 16, height: 1)
+                if let labelSize, layer == medianLayer {
+                    allSizes[dummy] = CGSize(width: max(16, labelSize.width + 8), height: 1)
+                    labelDummyOfEdge[index] = dummy
+                } else {
+                    allSizes[dummy] = CGSize(width: 16, height: 1)
+                }
                 dummies.insert(dummy)
                 midByLayer.append((layer, dummy))
             }
@@ -769,7 +803,7 @@ public enum DiagramLayoutEngine {
 
         var frames: [String: CGRect] = [:]
         var y = margin
-        for layer in ordered {
+        for (layerIndex, layer) in ordered.enumerated() {
             let layerHeight = layer.map { allSizes[$0]?.height ?? 0 }.max() ?? 0
             for id in layer {
                 let size = allSizes[id] ?? .zero
@@ -777,6 +811,7 @@ public enum DiagramLayoutEngine {
                 frames[id] = CGRect(x: cx - size.width / 2, y: y, width: size.width, height: size.height)
             }
             y += layerHeight + layerGap
+            if layerIndex < gapExtra.count { y += gapExtra[layerIndex] }
         }
 
         // Antiparallel detection: an edge whose reverse also exists must not
@@ -912,7 +947,18 @@ public enum DiagramLayoutEngine {
         var routeMaxX = crossExtent + margin
         for pts in routes { for p in pts { routeMaxX = max(routeMaxX, p.x) } }
         let size = CGSize(width: max(crossExtent, routeMaxX - margin) + margin * 2, height: y - layerGap + margin)
-        return (frames, size, routes)
+        // Label anchors ONLY where space was genuinely reserved — the widened
+        // median dummy of a multi-layer edge. Adjacent-layer edges get no
+        // anchor: several of them can share one inter-layer gap, and the
+        // renderer's sliding scorer separates their labels better than a
+        // fixed midpoint would (the grown gap gives it vertical room).
+        var labelAnchors = [CGPoint?](repeating: nil, count: routingEdges.count)
+        for (index, dummy) in labelDummyOfEdge {
+            if let f = frames[dummy] { labelAnchors[index] = CGPoint(x: f.midX, y: f.midY) }
+        }
+        // Dummy frames are internal scaffolding — don't leak them.
+        for dummy in dummies { frames[dummy] = nil }
+        return (frames, size, routes, labelAnchors)
     }
 
     // MARK: Brandes–Köpf horizontal coordinate assignment

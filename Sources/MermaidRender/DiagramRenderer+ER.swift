@@ -31,7 +31,12 @@ extension DiagramRenderer {
             if !edge.label.isEmpty {
                 var obstacles = nodeObstacles
                 for (j, rects) in allEdgeRects.enumerated() where j != i { obstacles += rects }
-                let at = labelAnchor(for: edge.points, label: edge.label, bounds: layout.size, obstacles: obstacles, placed: &placedLabels)
+                let at = edge.labelAnchor
+                    ?? labelAnchor(for: edge.points, label: edge.label, bounds: layout.size, obstacles: obstacles, placed: &placedLabels)
+                if edge.labelAnchor != nil {
+                    let sz = measure(edge.label, size: labelSize)
+                    placedLabels.append(CGRect(x: at.x - sz.width / 2, y: at.y - sz.height / 2, width: sz.width, height: sz.height))
+                }
                 drawEdgeLabel(edge.label, at: at, theme: theme, in: context)
             }
         }

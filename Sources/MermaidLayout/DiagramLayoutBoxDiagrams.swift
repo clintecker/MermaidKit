@@ -47,12 +47,15 @@ extension DiagramLayoutEngine {
         // Dummy-node layered layout + routing (parents above children via the
         // flipped layering edges; relations routed in their real direction so
         // the inheritance marker lands on the parent).
-        let (frames, size, routes) = layeredRoutes(
+        let (frames, size, routes, labelAnchors) = layeredRoutes(
             ids: diagram.classes.map(\.name),
             sizes: boxSizes,
             layeringEdges: layeringEdges,
             routingEdges: diagram.relations.map { (from: $0.from, to: $0.to) },
-            layerGap: 66, nodeGap: 30, margin: 14
+            layerGap: 66, nodeGap: 30, margin: 14,
+            edgeLabelSizes: diagram.relations.map { relation in
+                relation.label.flatMap { $0.isEmpty ? nil : measure($0, labelFontSize) }
+            }
         )
 
         let boxes = diagram.classes.compactMap { cls -> ClassLayout.Box? in
@@ -63,11 +66,13 @@ extension DiagramLayoutEngine {
             )
         }
 
-        let edges = zip(diagram.relations, routes).compactMap { relation, points -> ClassLayout.Edge? in
+        let edges = diagram.relations.indices.compactMap { i -> ClassLayout.Edge? in
+            let relation = diagram.relations[i], points = routes[i]
             guard points.count >= 2, frames[relation.from] != nil, frames[relation.to] != nil else { return nil }
             return ClassLayout.Edge(
                 start: points.first!, end: points.last!, points: points,
-                kind: relation.kind, label: relation.label
+                kind: relation.kind, label: relation.label,
+                labelAnchor: labelAnchors[i]
             )
         }
 
@@ -97,12 +102,15 @@ extension DiagramLayoutEngine {
 
         // Tighter vertical gap (52): the crow's-foot markers reach ~21pt off
         // each box, so this leaves room for them plus the relationship label.
-        let (frames, size, routes) = layeredRoutes(
+        let (frames, size, routes, labelAnchors) = layeredRoutes(
             ids: diagram.entities.map(\.name),
             sizes: boxSizes,
             layeringEdges: diagram.relations.map { ($0.from, $0.to) },
             routingEdges: diagram.relations.map { (from: $0.from, to: $0.to) },
-            layerGap: 66, nodeGap: 30, margin: 14
+            layerGap: 66, nodeGap: 30, margin: 14,
+            edgeLabelSizes: diagram.relations.map { relation in
+                relation.label.isEmpty ? nil : measure(relation.label, labelFontSize)
+            }
         )
 
         let boxes = diagram.entities.compactMap { entity -> ERLayout.Box? in
@@ -113,12 +121,14 @@ extension DiagramLayoutEngine {
             )
         }
 
-        let edges = zip(diagram.relations, routes).compactMap { relation, points -> ERLayout.Edge? in
+        let edges = diagram.relations.indices.compactMap { i -> ERLayout.Edge? in
+            let relation = diagram.relations[i], points = routes[i]
             guard points.count >= 2, frames[relation.from] != nil, frames[relation.to] != nil else { return nil }
             return ERLayout.Edge(
                 start: points.first!, end: points.last!, points: points,
                 fromCard: relation.fromCard, toCard: relation.toCard,
-                label: relation.label, identifying: relation.identifying
+                label: relation.label, identifying: relation.identifying,
+                labelAnchor: labelAnchors[i]
             )
         }
 
@@ -192,12 +202,15 @@ extension DiagramLayoutEngine {
             }
         }
 
-        let (frames, scopeSize, routes) = layeredRoutes(
+        let (frames, scopeSize, routes, labelAnchors) = layeredRoutes(
             ids: diagram.nodes.map(\.id),
             sizes: sizes,
             layeringEdges: diagram.edges.map { ($0.from, $0.to) },
             routingEdges: diagram.edges.map { (from: $0.from, to: $0.to) },
-            layerGap: 54, nodeGap: 26, margin: 6
+            layerGap: 54, nodeGap: 26, margin: 6,
+            edgeLabelSizes: diagram.edges.map { edge in
+                edge.label.flatMap { $0.isEmpty ? nil : measure($0, labelFontSize) }
+            }
         )
 
         var outNodes: [StateLayout.Node] = []
@@ -241,7 +254,8 @@ extension DiagramLayoutEngine {
                         start: CGPoint(x: e.start.x + dx, y: e.start.y + dy),
                         end: CGPoint(x: e.end.x + dx, y: e.end.y + dy),
                         points: e.points.map { CGPoint(x: $0.x + dx, y: $0.y + dy) },
-                        label: e.label
+                        label: e.label,
+                        labelAnchor: e.labelAnchor.map { CGPoint(x: $0.x + dx, y: $0.y + dy) }
                     ))
                 }
             } else {
@@ -253,10 +267,12 @@ extension DiagramLayoutEngine {
         }
 
         // This scope's own transitions, routed through their dummy-node chains.
-        for (edge, points) in zip(diagram.edges, routes) {
+        for i in diagram.edges.indices {
+            let edge = diagram.edges[i], points = routes[i]
             guard points.count >= 2, frames[edge.from] != nil, frames[edge.to] != nil else { continue }
             outEdges.append(StateLayout.Edge(
-                start: points.first!, end: points.last!, points: points, label: edge.label
+                start: points.first!, end: points.last!, points: points,
+                label: edge.label, labelAnchor: labelAnchors[i]
             ))
         }
 

@@ -24,7 +24,7 @@ extension DiagramScene {
 
         let labels: [Label] = layout.edges.compactMap { edge in
             guard let text = edge.label, !text.isEmpty else { return nil }
-            let center = polylineMidpoint(edge.points)
+            let center = edge.labelAnchor ?? polylineMidpoint(edge.points)
             let w = DiagramScene.estimatedLabelSize(text).width
             return Label(
                 text: text,

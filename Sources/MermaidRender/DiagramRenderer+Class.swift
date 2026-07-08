@@ -29,7 +29,15 @@ extension DiagramRenderer {
             if let label = edge.label, !label.isEmpty {
                 var obstacles = nodeObstacles
                 for (j, rects) in allEdgeRects.enumerated() where j != i { obstacles += rects }
-                let at = labelAnchor(for: edge.points, label: label, bounds: layout.size, obstacles: obstacles, placed: &placedLabels)
+                // Layout reserved space for this label (widened median dummy /
+                // grown inter-layer gap) — draw exactly there. Scoring is only
+                // the fallback for edges layout couldn't reserve for.
+                let at = edge.labelAnchor
+                    ?? labelAnchor(for: edge.points, label: label, bounds: layout.size, obstacles: obstacles, placed: &placedLabels)
+                if edge.labelAnchor != nil {
+                    let sz = measure(label, size: labelSize)
+                    placedLabels.append(CGRect(x: at.x - sz.width / 2, y: at.y - sz.height / 2, width: sz.width, height: sz.height))
+                }
                 drawEdgeLabel(label, at: at, theme: theme, in: context)
             }
         }
