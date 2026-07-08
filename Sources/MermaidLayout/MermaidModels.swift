@@ -151,6 +151,10 @@ public struct SequenceDiagram: Hashable, Sendable {
         public var head: ArrowHead = .filled
         /// Autonumber badge value, when `autonumber` is active.
         public var number: Int?
+        /// `A->>+B:` — the receiver activates when this message lands.
+        public var activatesTarget: Bool = false
+        /// `B->>-A:` — the sender deactivates as this message leaves.
+        public var deactivatesSender: Bool = false
     }
 
     /// A combined fragment (`loop`/`alt`/`opt`/`par`/`critical`/`break`) or
@@ -177,6 +181,9 @@ public struct SequenceDiagram: Hashable, Sendable {
         case divider(fragment: Int, label: String?)
         /// A fragment closes.
         case close(Int)
+        /// Explicit `activate X` / `deactivate X` statements.
+        case activate(String)
+        case deactivate(String)
     }
 
     /// Participants in first-appearance order (declared or first messaged).

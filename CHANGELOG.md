@@ -10,6 +10,10 @@
   sequence-primitives research memo's design), which variable-height rows
   and future activation bars build on. Frames lower to the scene as
   containers.
+- Sequence activation bars render: `->>+`/`->>-` shorthand and explicit
+  `activate`/`deactivate` statements produce execution bars on lifelines,
+  nested activations stacking with rightward depth offsets; unclosed bars
+  run to the lifeline bottom. Bars lower into the scene as slim nodes.
 - Sequence arrows carry their identity: all mermaid arrow tokens map to
   true head styles (none/filled/cross/open/both, including v11's
   `<<->>`); `autonumber start step off` variants render as badge chips.

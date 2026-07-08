@@ -117,6 +117,18 @@ extension DiagramRenderer {
             context.restoreGState()
         }
 
+        // Activation bars: on the lifeline, above it but under arrows; nested
+        // bars offset rightward per depth.
+        for bar in layout.bars {
+            let rect = CGRect(x: bar.x - 4 + CGFloat(bar.depth) * 4, y: bar.top,
+                              width: 8, height: max(bar.bottom - bar.top, 6))
+            context.setFillColor(resolvedCGColor(theme.accent.withAlphaComponent(0.14)))
+            context.setStrokeColor(resolvedCGColor(stroke))
+            context.setLineWidth(1)
+            context.addPath(CGPath(roundedRect: rect, cornerWidth: 2, cornerHeight: 2, transform: nil))
+            context.drawPath(using: .fillStroke)
+        }
+
         for head in layout.heads {
             if head.isActor {
                 // Stick figure above the label: head circle, body, arms, legs.

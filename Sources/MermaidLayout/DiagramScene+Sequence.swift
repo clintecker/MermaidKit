@@ -28,6 +28,13 @@ extension DiagramScene {
             } + layout.frames.map { frame in
                 // Fragment frames legitimately contain rows: containers.
                 Node(id: "\(frame.kind): \(frame.label ?? "")", frame: frame.rect, isContainer: true)
+            } + layout.bars.enumerated().map { index, bar in
+                // Activation bars are slim boxes ON the lifeline; arrows
+                // meeting them at their edge is design, and their 8pt width
+                // keeps traversal below the occlusion floor.
+                Node(id: "bar#\(index)",
+                     frame: CGRect(x: bar.x - 4 + CGFloat(bar.depth) * 4, y: bar.top,
+                                   width: 8, height: max(bar.bottom - bar.top, 6)))
             },
             // One Edge per message arrow, routed along its row. A normal message
             // is the horizontal segment from sender to receiver lifeline. A

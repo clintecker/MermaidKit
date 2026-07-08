@@ -893,9 +893,18 @@ public enum MermaidParser {
                 if let top = openFragments.popLast() { events.append(.close(top)) }
                 continue
             }
-            if line.hasPrefix("activate") || line.hasPrefix("deactivate")
-                || line.hasPrefix("box") {
-                continue // activations (bars pending) and boxes (pending)
+            if line.hasPrefix("activate ") {
+                let id = String(line.dropFirst(9)).trimmingCharacters(in: .whitespaces)
+                if !id.isEmpty { note(id); events.append(.activate(id)) }
+                continue
+            }
+            if line.hasPrefix("deactivate ") {
+                let id = String(line.dropFirst(11)).trimmingCharacters(in: .whitespaces)
+                if !id.isEmpty { events.append(.deactivate(id)) }
+                continue
+            }
+            if line.hasPrefix("box ") || line == "box" {
+                continue // box groupings (pending)
             }
 
             // Messages. Longest token first so `-->>` never part-matches as
@@ -918,6 +927,10 @@ public enum MermaidParser {
                 // activation, it is NOT part of the participant name. The old
                 // parser minted phantom "+B"/"-B" lifelines from the docs'
                 // very first example.
+                var activates = false
+                var deactivates = false
+                if to.hasPrefix("+") { activates = true }
+                if to.hasPrefix("-") { deactivates = true }   // `->>-A:` deactivates the RECEIVER-side sender form below
                 if to.hasPrefix("+") || to.hasPrefix("-") { to = String(to.dropFirst()).trimmingCharacters(in: .whitespaces) }
                 if from.hasSuffix("+") || from.hasSuffix("-") { from = String(from.dropLast()).trimmingCharacters(in: .whitespaces) }
                 guard !from.isEmpty, !to.isEmpty else { break }
@@ -930,7 +943,8 @@ public enum MermaidParser {
                 note(to)
                 messages.append(SequenceDiagram.Message(
                     from: from, to: to, text: text, dashed: dashed,
-                    head: head, number: number))
+                    head: head, number: number,
+                    activatesTarget: activates, deactivatesSender: deactivates))
                 events.append(.message(messages.count - 1))
                 break
             }

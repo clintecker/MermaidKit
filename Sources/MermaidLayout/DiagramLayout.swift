@@ -102,6 +102,18 @@ public struct SequenceLayout: Sendable {
         }
     }
 
+    /// An activation bar: an execution interval on a lifeline. Nested
+    /// activations stack with increasing `depth` (drawn offset rightward).
+    public struct Bar: Sendable {
+        public let x: CGFloat
+        public let depth: Int
+        public let top: CGFloat
+        public let bottom: CGFloat
+        public init(x: CGFloat, depth: Int, top: CGFloat, bottom: CGFloat) {
+            self.x = x; self.depth = depth; self.top = top; self.bottom = bottom
+        }
+    }
+
     /// A note box anchored between message rows.
     public struct NoteBox: Sendable {
         public let text: String
@@ -152,6 +164,8 @@ public struct SequenceLayout: Sendable {
     public var notes: [NoteBox] = []
     /// Fragment frames, outermost first (draw order: behind rows).
     public var frames: [Frame] = []
+    /// Activation bars on lifelines.
+    public var bars: [Bar] = []
 }
 
 /// Placed pie chart: a disk of slices with a legend column to its right.

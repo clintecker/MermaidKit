@@ -734,6 +734,20 @@ extension DiagramLayoutEngine {
         var noteBoxes: [SequenceLayout.NoteBox] = []
         var frames: [SequenceLayout.Frame] = []
         var frameStack: [OpenFrame] = []
+        // Activation bars: a per-participant stack of open bars; closing one
+        // yields a depth interval on that lifeline.
+        var barStack: [String: [(top: CGFloat, depth: Int)]] = [:]
+        var bars: [SequenceLayout.Bar] = []
+        func openBar(_ id: String, at barY: CGFloat) {
+            let depth = barStack[id, default: []].count
+            barStack[id, default: []].append((barY, depth))
+        }
+        func closeBar(_ id: String, at barY: CGFloat) {
+            guard let open = barStack[id]?.popLast(),
+                  let index = indexOf[id] else { return }
+            bars.append(.init(x: heads[index].lifelineX, depth: open.depth,
+                              top: open.top, bottom: barY))
+        }
         var y = arrowsTop
 
         func widen(_ lo: CGFloat, _ hi: CGFloat) {
@@ -756,6 +770,9 @@ extension DiagramLayoutEngine {
                     text: message.text, dashed: message.dashed,
                     isSelfMessage: isSelf, head: message.head, number: message.number))
                 widen(min(heads[a].lifelineX, toX), max(heads[a].lifelineX, toX))
+                let arrowY = y + rowHeight - 14
+                if message.activatesTarget { openBar(message.to, at: arrowY) }
+                if message.deactivatesSender { closeBar(message.from, at: arrowY) }
                 y += rowHeight
             case .note(let index):
                 let noteItem = diagram.notes[index]
@@ -791,6 +808,10 @@ extension DiagramLayoutEngine {
                     frameStack[top].dividers.append(.init(y: y + dividerRowHeight / 2, label: label))
                 }
                 y += dividerRowHeight
+            case .activate(let id):
+                openBar(id, at: y + 4)   // consumes no row; the bar starts here
+            case .deactivate(let id):
+                closeBar(id, at: y + 4)
             case .close(let fragment):
                 guard let top = frameStack.lastIndex(where: { $0.fragment == fragment }) else { continue }
                 let open = frameStack.remove(at: top)
@@ -817,6 +838,14 @@ extension DiagramLayoutEngine {
         }
         // Outermost first so the renderer paints outer frames beneath inner.
         frames.sort { $0.rect.width * $0.rect.height > $1.rect.width * $1.rect.height }
+        // Bars the author never deactivated run to the lifeline bottom.
+        for (id, opens) in barStack {
+            guard let index = indexOf[id] else { continue }
+            for open in opens {
+                bars.append(.init(x: heads[index].lifelineX, depth: open.depth,
+                                  top: open.top, bottom: y + 4))
+            }
+        }
 
         let bottom = max(y, arrowsTop + rowHeight)
         // Self-message labels sit to the right of the loop; widen the canvas
@@ -834,7 +863,8 @@ extension DiagramLayoutEngine {
             lifelineBottom: bottom,
             arrows: arrows,
             notes: noteBoxes,
-            frames: frames
+            frames: frames,
+            bars: bars
         )
     }
 

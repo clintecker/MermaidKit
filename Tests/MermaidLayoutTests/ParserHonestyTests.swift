@@ -352,3 +352,26 @@ extension ParserHonestyTests {
                        "missing 'end' closes at end-of-diagram")
     }
 }
+
+extension ParserHonestyTests {
+    func testActivationBarsFromShorthandAndStatements() throws {
+        let s = try seqPub("""
+        A->>+B: work
+        B->>B: think
+        B-->>-A: done
+        activate A
+        A->>A: reflect
+        deactivate A
+        """)
+        XCTAssertEqual(s.messages[0].activatesTarget, true)
+        XCTAssertEqual(s.messages[2].deactivatesSender, true)
+
+        let measure: DiagramTextMeasurer = { t, size in
+            CGSize(width: CGFloat(max(t.count, 1)) * size * 0.6, height: size + 4)
+        }
+        let layout = DiagramLayoutEngine.layout(s, measure: measure)
+        XCTAssertEqual(layout.bars.count, 2, "one bar per activation interval")
+        let bBar = layout.bars.min(by: { $0.top < $1.top })!
+        XCTAssertLessThan(bBar.top, bBar.bottom, "B's bar spans work...done")
+    }
+}
