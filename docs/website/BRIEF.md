@@ -64,7 +64,7 @@ shape:
 
 - `MermaidRenderer.image(source:theme:spacing:)` — one call, one image.
   Sync and fast enough to call in a SwiftUI `body` (worst dense fixture
-  ~36 ms cold **including rasterization**, most types under 12 ms, cached
+  ~25 ms cold **including rasterization**, most types under 12 ms, cached
   thereafter); `renderImage(...)` is the async sibling with cancellation.
 - `MermaidRenderer.attachmentString(...)` — a diagram as an
   `NSAttributedString` attachment for text views.
@@ -158,7 +158,7 @@ In the deployed site these same files are referenced relatively:
 ## Numbers the site may cite (verified)
 
 - 30 diagram types, zero dependencies, zero JavaScript, no WebView.
-- Worst dense fixture ~36 ms cold render including rasterization; most
+- Worst dense fixture ~25 ms (sankey) cold render including rasterization; most
   types 2–12 ms; results cached. CI fails any type over 250 ms.
 - Every fixture lint-checked in CI against the geometric invariants above.
 - Adversarial input suite; input caps mirror mermaid.js (50k chars, 500

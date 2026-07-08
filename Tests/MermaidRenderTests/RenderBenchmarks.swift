@@ -25,19 +25,28 @@ final class RenderBenchmarks: XCTestCase {
         XCTAssertGreaterThanOrEqual(files.count, 20)
 
         var rows: [(String, Double, Double)] = []
-        for url in files {
-            let source = try String(contentsOf: url, encoding: .utf8)
-            let name = url.deletingPathExtension().lastPathComponent
-
-            var parseBest = Double.infinity, totalBest = Double.infinity
-            for run in 0..<3 {
+        // ROUND-ROBIN sampling: measure every type once per round instead of
+        // three consecutive samples per type. Sequential per-type sampling
+        // biased late-alphabet types (sankey, sequence) with the heat and
+        // cache pressure built up by the twenty types before them — observed
+        // as a 2x swing (23 ms isolated vs 45 ms in-suite) on the same
+        // fixture. Rounds spread that contention evenly, and best-of-rounds
+        // recovers the true cold cost.
+        let sources: [(name: String, source: String)] = try files.map {
+            ($0.deletingPathExtension().lastPathComponent,
+             try String(contentsOf: $0, encoding: .utf8))
+        }
+        var parseBestByName: [String: Double] = [:]
+        var totalBestByName: [String: Double] = [:]
+        for run in 0..<3 {
+            for entry in sources {
                 // A run-unique comment busts the render cache so every
                 // measurement is a true cold parse+layout+render.
-                let src = source + "\n%% bench-\(name)-\(run)"
+                let src = entry.source + "\n%% bench-\(entry.name)-\(run)"
                 var t0 = CFAbsoluteTimeGetCurrent()
                 let parsed = MermaidParser.parse(src)
-                parseBest = min(parseBest, (CFAbsoluteTimeGetCurrent() - t0) * 1000)
-                XCTAssertNotNil(parsed, name)
+                let parseMS = (CFAbsoluteTimeGetCurrent() - t0) * 1000
+                XCTAssertNotNil(parsed, entry.name)
 
                 t0 = CFAbsoluteTimeGetCurrent()
                 let image = MermaidRenderer.image(source: src, theme: theme)
@@ -45,10 +54,17 @@ final class RenderBenchmarks: XCTestCase {
                 // until first use, so timing image() alone would flatter the
                 // numbers by excluding the actual CoreGraphics work.
                 let rasterized = image?.cgImage(forProposedRect: nil, context: nil, hints: nil)
-                totalBest = min(totalBest, (CFAbsoluteTimeGetCurrent() - t0) * 1000)
-                XCTAssertNotNil(image, name)
-                XCTAssertNotNil(rasterized, name)
+                let totalMS = (CFAbsoluteTimeGetCurrent() - t0) * 1000
+                XCTAssertNotNil(image, entry.name)
+                XCTAssertNotNil(rasterized, entry.name)
+                parseBestByName[entry.name] = min(parseBestByName[entry.name] ?? .infinity, parseMS)
+                totalBestByName[entry.name] = min(totalBestByName[entry.name] ?? .infinity, totalMS)
             }
+        }
+        for entry in sources {
+            let parseBest = parseBestByName[entry.name] ?? 0
+            let totalBest = totalBestByName[entry.name] ?? 0
+            let name = entry.name
             rows.append((name, parseBest, totalBest))
             XCTAssertLessThan(totalBest, 250, "\(name): cold render must stay interactive")
         }

@@ -84,6 +84,6 @@ parsing returns `nil` fast.
 
 Rendering is synchronous and cached per (source, appearance). Cold renders
 are under 12 ms for most types (worst measured: ~25 ms for a dense
-architecture diagram, rasterization included), so calling from a SwiftUI `body` or a
+sankey, rasterization included), so calling from a SwiftUI `body` or a
 main-thread layout pass is by design. If you're rendering hundreds of
 diagrams in one pass, do it off-main and hand images back.

@@ -41,7 +41,7 @@ Embedding Mermaid today usually means shipping mermaid.js inside a
 `WKWebView`: a JS runtime per diagram, async round-trips, non-native text,
 and a web process in your memory footprint. MermaidKit renders the same
 source natively and synchronously — every diagram type below renders cold in
-**under 36 ms** on Apple silicon, most in **under 12 ms**, and results are
+**under 25 ms** on Apple silicon, most in **under 12 ms**, and results are
 cached per (source, theme, spacing).
 
 |  | MermaidKit | mermaid.js + WKWebView | [BeautifulMermaid](https://github.com/lukilabs/beautiful-mermaid-swift) |
@@ -79,23 +79,25 @@ mermaid.js, and the failure mode is deliberate:
   `style`, `linkStyle`, `click`) → **ignored, not fatal**: the diagram still
   parses and renders with MermaidKit's own theme. Ditto comments (`%%`).
 - **Structural syntax that goes beyond the core** — much of it works:
-  YAML front-matter; flowchart chained edges (`A --> B --> C`), `&`
-  fan-out, inline `-- text -->` labels, bidirectional `<-->`, min-length
-  links, `:::class` tolerance; sequence activation shorthand (`->>+`),
-  cross/async arrows (`-x`, `-)`), `autonumber`, aliases; gantt directive
-  lines (never phantom bars) and `y/M/s` durations; radar positional
-  values; packet `+N` relative widths; treemap `:::class`; gitGraph
-  `cherry-pick`; sequence notes, `actor` stick
-  figures, typed participants (`@{ "type": "database" }`), create/destroy,
-  `<br/>` line breaks, activation bars, `box` groupings, combined fragments (`loop`/`alt`/`opt`/`par`/`critical`/
-  `break`, nested) with `rect` bands, true arrow heads (`-x`, `-)`,
-  `<<->>`), autonumber badges; class generics `~T~`; ER attribute keys;
-  state composites, forks, choices. Some still doesn't (flowchart
-  subgraph boxes, flowchart `@{ shape }`). If your diagram parses
-  but drops something you wrote, that's a gap: please
+  YAML front-matter (all types); flowchart chained edges
+  (`A --> B --> C`), `&` fan-out, inline `-- text -->` labels,
+  bidirectional `<-->`, min-length links, `--o`/`--x` heads, edge IDs,
+  `:::class` tolerance; the full everyday sequence set — combined
+  fragments (`loop`/`alt`+`else`/`opt`/`par`/`critical`/`break`, nested)
+  with `rect` bands, activation bars (`->>+`/`->>-`, `activate`), `box`
+  groupings, notes with `<br/>` line breaks, `actor` figures, typed
+  participants (`@{ "type": "database" }`), create/destroy, true arrow
+  heads for every token (`-x`, `-)`, `<<->>`), autonumber badges; gantt
+  directive lines (never phantom bars) and `y/M/s` durations; radar
+  positional values; packet `+N` relative widths; treemap `:::class`;
+  gitGraph `cherry-pick`; class generics `~T~`; ER attribute keys; state
+  composites, forks, choices. Some still doesn't (flowchart subgraph
+  boxes, flowchart `@{ shape }`). If your diagram parses but drops
+  something you wrote, that's a gap: please
   [open an issue](#reporting-a-diagram-that-renders-wrong) with the source.
 
-Not supported anywhere: HTML in labels (`<br/>` is treated as text),
+Not supported anywhere: HTML in labels other than `<br/>` line breaks
+(sequence messages and notes honor `<br/>`; other tags render as text),
 FontAwesome icons, click callbacks, animations, and mermaid.js theming
 directives (theming is `DiagramTheme`'s job).
 
@@ -123,26 +125,27 @@ Cold parse → layout → render **to rasterized pixels** (the benchmark forces
 rasterization — a deferred-drawing `NSImage` would flatter the numbers), best
 of 3, on an Apple-silicon Mac
 (the dense per-type fixtures in this repo — real-world diagrams are usually
-smaller). Measured by `RenderBenchmarks`, which fails CI if any type exceeds
-250 ms:
+smaller). Samples are round-robin across types (sequential per-type sampling
+biased late types with accumulated heat — a measured 2x swing), best of
+three rounds. `RenderBenchmarks` fails CI if any type exceeds 250 ms:
 
 | Diagram | Cold render | Diagram | Cold render |
 |---|---:|---|---:|
-| architecture | 15.1 ms | packet | 3.4 ms |
-| block | 3.2 ms | pie | 1.7 ms |
-| c4 | 7.0 ms | quadrant | 3.4 ms |
-| class | 10.1 ms | radar | 2.0 ms |
-| cynefin | 2.3 ms | requirement | 8.9 ms |
-| er | 6.9 ms | sankey | 35.8 ms |
-| eventmodeling | 3.6 ms | sequence | 7.7 ms |
-| flowchart | 9.2 ms | state | 11.7 ms |
-| gantt | 3.0 ms | swimlane | 3.3 ms |
-| gitgraph | 2.2 ms | timeline | 4.3 ms |
-| ishikawa | 1.9 ms | treemap | 2.8 ms |
-| journey | 3.8 ms | treeview | 3.1 ms |
-| kanban | 5.0 ms | venn | 1.5 ms |
-| mindmap | 8.0 ms | wardley | 2.3 ms |
-| zenuml | 6.5 ms | xychart | 1.6 ms |
+| architecture | 13.8 ms | packet | 3.1 ms |
+| block | 2.9 ms | pie | 1.7 ms |
+| c4 | 5.9 ms | quadrant | 3.1 ms |
+| class | 9.2 ms | radar | 2.6 ms |
+| cynefin | 2.3 ms | requirement | 8.0 ms |
+| er | 6.8 ms | sankey | 25.0 ms |
+| eventmodeling | 3.5 ms | sequence | 7.9 ms |
+| flowchart | 9.8 ms | state | 10.8 ms |
+| gantt | 2.9 ms | swimlane | 3.2 ms |
+| gitgraph | 2.1 ms | timeline | 3.9 ms |
+| ishikawa | 2.0 ms | treemap | 3.0 ms |
+| journey | 3.4 ms | treeview | 3.0 ms |
+| kanban | 4.1 ms | venn | 1.4 ms |
+| mindmap | 7.4 ms | wardley | 2.3 ms |
+| zenuml | 5.1 ms | xychart | 1.6 ms |
 
 Rendering is synchronous by design: at these times a first render in a
 SwiftUI `body` is cheaper than a state round-trip, and repeat renders hit the
