@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (0.2.0)
+## 0.2.0
 
 ELK-inspired layout upgrades ("what can we learn from the Eclipse Layout
 Kernel" — the answer, implemented):
@@ -14,6 +14,11 @@ Kernel" — the answer, implemented):
 - Fixed-side ports: architecture honors author-declared edge sides
   (`waf:R --> L:gateway`); Edge.fromSide/toSide are now optional (nil =
   engine picks the facing side).
+- Edit stability (ELK's "consider model order"): explicit declaration-order
+  tie-breaking in crossing minimization, fully deterministic optimization
+  (no Set-iteration order dependence), verified by SceneDelta-based tests —
+  re-runs are bit-identical, a same-width label rename moves nothing, and
+  appending a leaf node has a bounded blast radius.
 - `DiagramSpacing` — the density knob (`.compact`/`.regular`/
   `.comfortable`, or custom gaps), threaded through flowchart/class/ER/
   state/architecture and surfaced on MermaidView/MermaidRenderer; render

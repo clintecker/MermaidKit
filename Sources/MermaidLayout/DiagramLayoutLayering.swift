@@ -117,7 +117,10 @@ extension DiagramLayoutEngine {
             var grew = true
             while grew {
                 grew = false
-                for node in Array(inTree) {
+                // Sorted iteration: Set order is unspecified, and layer
+                // assignment must be bit-for-bit reproducible (ELK's
+                // "consider model order" starts with determinism).
+                for node in inTree.sorted() {
                     for ei in adjacency[node] where !treeEdges.contains(ei) {
                         let e = edges[ei]
                         guard inComponent.contains(e.tail), inComponent.contains(e.head) else { continue }
@@ -166,7 +169,7 @@ extension DiagramLayoutEngine {
         let cap = 8 * edgeIndices.count + 64
         for _ in 0..<cap {
             var swapped = false
-            for cut in treeEdges {
+            for cut in treeEdges.sorted() {
                 let tailSide = tailComponent(removing: cut)
                 var cutValue = 0
                 for ei in edgeIndices {

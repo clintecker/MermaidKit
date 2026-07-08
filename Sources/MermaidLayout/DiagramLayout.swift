@@ -695,7 +695,15 @@ public enum DiagramLayoutEngine {
         recordPositions()
         for _ in 0..<sweeps {
             for index in 1..<max(layers.count, 1) {
-                layers[index].sort { barycenter($0) < barycenter($1) }
+                layers[index].sort {
+                    let a = barycenter($0), b = barycenter($1)
+                    // Explicit model-order tie-break (ELK's "consider model
+                    // order"): equal barycenters keep their existing relative
+                    // order — descending from declaration order — instead of
+                    // leaning on the sort algorithm's undocumented stability.
+                    if a != b { return a < b }
+                    return (position[$0] ?? 0) < (position[$1] ?? 0)
+                }
                 recordPositions()
             }
         }
