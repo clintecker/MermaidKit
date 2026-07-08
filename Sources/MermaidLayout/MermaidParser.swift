@@ -800,6 +800,9 @@ public enum MermaidParser {
         var messages: [SequenceDiagram.Message] = []
 
         var notes: [SequenceDiagram.Note] = []
+        var fragments: [SequenceDiagram.Fragment] = []
+        var events: [SequenceDiagram.Event] = []
+        var openFragments: [Int] = []   // stack of fragment indices
         func note(_ id: String, label: String? = nil, isActor: Bool = false) {
             if participants[id] == nil {
                 participants[id] = SequenceDiagram.Participant(id: id, label: label ?? id, isActor: isActor)
@@ -859,18 +862,40 @@ public enum MermaidParser {
                         ids.forEach { note($0) }
                         notes.append(.init(position: position, ids: ids, text: text,
                                            afterMessage: messages.count))
+                        events.append(.note(notes.count - 1))
                         continue
                     }
                 }
                 continue // malformed note: skip, never a phantom message
             }
-            if line.hasPrefix("loop")
-                || line.hasPrefix("alt") || line.hasPrefix("else") || line.hasPrefix("end")
-                || line.hasPrefix("activate") || line.hasPrefix("deactivate")
-                || line.hasPrefix("box") || line.hasPrefix("par") || line.hasPrefix("and")
-                || line.hasPrefix("critical") || line.hasPrefix("option") || line.hasPrefix("break")
-                || line.hasPrefix("rect") || line.hasPrefix("opt") {
-                continue // fragments/boxes: frames not yet drawn (tracked gap)
+            // Combined fragments: a tolerant stack machine. Unclosed frames
+            // close at end-of-diagram; a stray `end` is ignored.
+            let keyword = line.split(separator: " ").first.map(String.init) ?? line
+            if let kind = SequenceDiagram.Fragment.Kind(rawValue: keyword) {
+                let label = line.count > keyword.count
+                    ? String(line.dropFirst(keyword.count)).trimmingCharacters(in: .whitespaces)
+                    : nil
+                fragments.append(.init(kind: kind, label: label?.isEmpty == true ? nil : label))
+                openFragments.append(fragments.count - 1)
+                events.append(.open(fragments.count - 1))
+                continue
+            }
+            if keyword == "else" || keyword == "and" || keyword == "option" {
+                if let top = openFragments.last {
+                    let label = line.count > keyword.count
+                        ? String(line.dropFirst(keyword.count)).trimmingCharacters(in: .whitespaces)
+                        : nil
+                    events.append(.divider(fragment: top, label: label?.isEmpty == true ? nil : label))
+                }
+                continue
+            }
+            if line == "end" {
+                if let top = openFragments.popLast() { events.append(.close(top)) }
+                continue
+            }
+            if line.hasPrefix("activate") || line.hasPrefix("deactivate")
+                || line.hasPrefix("box") {
+                continue // activations (bars pending) and boxes (pending)
             }
 
             // Messages. Longest token first so `-->>` never part-matches as
@@ -906,14 +931,19 @@ public enum MermaidParser {
                 messages.append(SequenceDiagram.Message(
                     from: from, to: to, text: text, dashed: dashed,
                     head: head, number: number))
+                events.append(.message(messages.count - 1))
                 break
             }
         }
 
         guard !participants.isEmpty else { return nil }
+        // Close any unclosed frames (author forgot `end`): tolerant, not fatal.
+        while let top = openFragments.popLast() { events.append(.close(top)) }
         return SequenceDiagram(
             participants: order.compactMap { participants[$0] },
             notes: notes,
+            fragments: fragments,
+            events: events,
             messages: messages
         )
     }

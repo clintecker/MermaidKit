@@ -83,6 +83,25 @@ public struct SequenceLayout: Sendable {
         }
     }
 
+    /// A combined-fragment frame (loop/alt/opt/par/critical/break) or a
+    /// background rect, already positioned around its rows.
+    public struct Frame: Sendable {
+        /// Divider line (`else`/`and`/`option`) inside the frame.
+        public struct Divider: Sendable {
+            public let y: CGFloat
+            public let label: String?
+            public init(y: CGFloat, label: String?) { self.y = y; self.label = label }
+        }
+        /// Raw value of `SequenceDiagram.Fragment.Kind`.
+        public let kind: String
+        public let label: String?
+        public let rect: CGRect
+        public let dividers: [Divider]
+        public init(kind: String, label: String?, rect: CGRect, dividers: [Divider]) {
+            self.kind = kind; self.label = label; self.rect = rect; self.dividers = dividers
+        }
+    }
+
     /// A note box anchored between message rows.
     public struct NoteBox: Sendable {
         public let text: String
@@ -131,6 +150,8 @@ public struct SequenceLayout: Sendable {
     public let arrows: [Arrow]
     /// Note boxes, already positioned in their interleaved rows.
     public var notes: [NoteBox] = []
+    /// Fragment frames, outermost first (draw order: behind rows).
+    public var frames: [Frame] = []
 }
 
 /// Placed pie chart: a disk of slices with a legend column to its right.

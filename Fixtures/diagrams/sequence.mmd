@@ -29,5 +29,9 @@ sequenceDiagram
     Host->>View: same source again
     View->>Rend: image(source, theme, spacing)
     Rend->>Cache: object(forKey:)
-    Cache-->>Rend: hit (copied image)
+    alt cache hit
+        Cache-->>Rend: copied image
+    else miss
+        Rend->>Parse: parse(source)
+    end
     Rend-->>View: PlatformImage

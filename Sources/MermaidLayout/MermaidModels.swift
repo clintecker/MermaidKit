@@ -153,10 +153,41 @@ public struct SequenceDiagram: Hashable, Sendable {
         public var number: Int?
     }
 
+    /// A combined fragment (`loop`/`alt`/`opt`/`par`/`critical`/`break`) or
+    /// background `rect`, spanning a range of the event stream.
+    public struct Fragment: Hashable, Sendable {
+        public enum Kind: String, Hashable, Sendable {
+            case loop, alt, opt, par, critical, `break`, rect
+        }
+        public let kind: Kind
+        /// The guard/label after the keyword (`alt is sick` → "is sick");
+        /// for `rect`, the color spec (unused by our theme-driven fill).
+        public let label: String?
+        public init(kind: Kind, label: String?) { self.kind = kind; self.label = label }
+    }
+
+    /// One entry in the diagram's row stream, in exact source order. Indices
+    /// point into `messages`, `notes`, and `fragments`.
+    public enum Event: Hashable, Sendable {
+        case message(Int)
+        case note(Int)
+        /// A fragment opens (its label tab row).
+        case open(Int)
+        /// An `else`/`and`/`option` divider inside fragment `fragment`.
+        case divider(fragment: Int, label: String?)
+        /// A fragment closes.
+        case close(Int)
+    }
+
     /// Participants in first-appearance order (declared or first messaged).
     public var participants: [Participant]
     /// Notes, anchored between messages by `afterMessage`.
     public var notes: [Note] = []
+    /// Combined fragments / rects, indexed by `Event.open/close/divider`.
+    public var fragments: [Fragment] = []
+    /// The full row stream in source order. Empty for diagrams built before
+    /// fragments existed (layout falls back to messages + anchored notes).
+    public var events: [Event] = []
     /// Messages in source order.
     public var messages: [Message]
 }

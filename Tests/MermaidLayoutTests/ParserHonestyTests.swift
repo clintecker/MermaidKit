@@ -308,3 +308,47 @@ extension ParserHonestyTests {
         return s
     }
 }
+
+extension ParserHonestyTests {
+    func testFragmentsParseAsFrames() throws {
+        let s = try seqPub("""
+        A->>B: start
+        alt cache hit
+            B-->>A: cached
+        else miss
+            loop each row
+                B->>B: compute
+            end
+            B-->>A: fresh
+        end
+        """)
+        XCTAssertEqual(s.fragments.count, 2)
+        XCTAssertEqual(s.fragments[0].kind, .alt)
+        XCTAssertEqual(s.fragments[0].label, "cache hit")
+        XCTAssertEqual(s.fragments[1].kind, .loop)
+        // Event stream: message, open(alt), message, divider, open(loop),
+        // message, close(loop), message, close(alt).
+        XCTAssertEqual(s.events.count, 9)
+
+        let measure: DiagramTextMeasurer = { t, size in
+            CGSize(width: CGFloat(max(t.count, 1)) * size * 0.6, height: size + 4)
+        }
+        let layout = DiagramLayoutEngine.layout(s, measure: measure)
+        XCTAssertEqual(layout.frames.count, 2)
+        // Nesting: the loop frame sits strictly inside the alt frame.
+        let alt = layout.frames.first(where: { $0.kind == "alt" })!
+        let loop = layout.frames.first(where: { $0.kind == "loop" })!
+        XCTAssertTrue(alt.rect.contains(loop.rect), "inner frame must nest inside outer")
+        XCTAssertEqual(alt.dividers.count, 1)
+        // Divider sits between the frame's top and bottom.
+        XCTAssertGreaterThan(alt.dividers[0].y, alt.rect.minY)
+        XCTAssertLessThan(alt.dividers[0].y, alt.rect.maxY)
+    }
+
+    func testUnclosedFragmentIsTolerated() throws {
+        let s = try seqPub("A->>B: x\nloop forever\nB->>A: y")
+        XCTAssertEqual(s.fragments.count, 1)
+        XCTAssertEqual(s.events.filter { if case .close = $0 { return true }; return false }.count, 1,
+                       "missing 'end' closes at end-of-diagram")
+    }
+}

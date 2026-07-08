@@ -56,6 +56,54 @@ extension DiagramRenderer {
         let stroke = theme.ink.withAlphaComponent(0.35)
         let hairline = theme.ink.withAlphaComponent(0.18)
 
+        // Fragment frames first — everything else draws on top of them.
+        for frame in layout.frames {
+            if frame.kind == "rect" {
+                context.setFillColor(resolvedCGColor(theme.accent.withAlphaComponent(0.06)))
+                context.fill(frame.rect)
+                continue
+            }
+            context.setStrokeColor(resolvedCGColor(hairline))
+            context.setLineWidth(1)
+            context.stroke(frame.rect)
+            // Kind tab (the classic dog-eared corner chip) + guard label.
+            let kindSize = measure(frame.kind, size: 9)
+            let tab = CGRect(x: frame.rect.minX, y: frame.rect.minY,
+                             width: kindSize.width + 14, height: 15)
+            context.setFillColor(resolvedCGColor(theme.hairline.withAlphaComponent(0.14)))
+            context.beginPath()
+            context.move(to: CGPoint(x: tab.minX, y: tab.minY))
+            context.addLine(to: CGPoint(x: tab.maxX, y: tab.minY))
+            context.addLine(to: CGPoint(x: tab.maxX - 5, y: tab.maxY))
+            context.addLine(to: CGPoint(x: tab.minX, y: tab.maxY))
+            context.closePath()
+            context.fillPath()
+            drawText(frame.kind, center: CGPoint(x: tab.minX + kindSize.width / 2 + 5, y: tab.midY),
+                     size: 9, weight: .semibold, color: theme.secondaryTextColor, in: context)
+            if let label = frame.label, !label.isEmpty {
+                drawTextLeft("[\(label)]", at: CGPoint(x: tab.maxX + 6, y: tab.midY),
+                             size: 9, color: theme.tertiaryTextColor, in: context)
+            }
+            for divider in frame.dividers {
+                context.saveGState()
+                context.setStrokeColor(resolvedCGColor(hairline))
+                context.setLineDash(phase: 0, lengths: [4, 3])
+                context.beginPath()
+                context.move(to: CGPoint(x: frame.rect.minX, y: divider.y))
+                context.addLine(to: CGPoint(x: frame.rect.maxX, y: divider.y))
+                context.strokePath()
+                context.restoreGState()
+                if let label = divider.label, !label.isEmpty {
+                    let size = measure("[\(label)]", size: 9)
+                    context.setFillColor(resolvedCGColor(theme.canvas))
+                    context.fill(CGRect(x: frame.rect.midX - size.width / 2 - 3, y: divider.y - 7,
+                                        width: size.width + 6, height: 14))
+                    drawText("[\(label)]", center: CGPoint(x: frame.rect.midX, y: divider.y),
+                             size: 9, color: theme.tertiaryTextColor, in: context)
+                }
+            }
+        }
+
         // Lifelines behind everything.
         for head in layout.heads {
             context.saveGState()

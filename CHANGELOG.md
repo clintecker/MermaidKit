@@ -2,10 +2,21 @@
 
 ## Unreleased
 
-- Sequence diagrams: `Note right of / left of / over` boxes render (author
-  content that previously vanished), interleaved in their author-order
-  rows and visible to the geometry linter; `actor` participants draw as
-  stick figures.
+- Sequence diagrams: combined fragments render — `loop`/`alt`+`else`/
+  `opt`/`par`+`and`/`critical`+`option`/`break` frames with kind tabs,
+  guard labels, and dividers, arbitrarily nested (tolerant stack machine;
+  a missing `end` closes at end-of-diagram), plus `rect` background
+  bands. The layout's flat row list became a typed row stream (the
+  sequence-primitives research memo's design), which variable-height rows
+  and future activation bars build on. Frames lower to the scene as
+  containers.
+- Sequence arrows carry their identity: all mermaid arrow tokens map to
+  true head styles (none/filled/cross/open/both, including v11's
+  `<<->>`); `autonumber start step off` variants render as badge chips.
+- Sequence `Note right of / left of / over` boxes render (author content
+  that previously vanished); `actor` participants draw as stick figures.
+- README/fixture: the sequence self-portrait now exercises an actor, a
+  note, and an alt/else fragment.
 
 ## 0.6.0
 

@@ -699,61 +699,126 @@ extension DiagramLayoutEngine {
         }
 
         let arrowsTop = margin + headHeight + 18
-        // Notes interleave with messages: each note occupies its own row at
-        // its author-order position (afterMessage = messages already seen).
-        let sortedNotes = diagram.notes.enumerated()
-            .sorted { ($0.element.afterMessage, $0.offset) < ($1.element.afterMessage, $1.offset) }
-            .map(\.element)
-        // Notes with afterMessage <= i precede message i in the row order.
-        func rowOfMessage(_ index: Int) -> Int {
-            index + sortedNotes.filter { $0.afterMessage <= index }.count
-        }
-        func rowOfNote(_ noteIndex: Int) -> Int {
-            sortedNotes[noteIndex].afterMessage + noteIndex
-        }
-        var arrows: [SequenceLayout.Arrow] = []
-        for (index, message) in diagram.messages.enumerated() {
-            guard let a = indexOf[message.from], let b = indexOf[message.to] else { continue }
-            let isSelf = a == b
-            arrows.append(SequenceLayout.Arrow(
-                fromX: heads[a].lifelineX,
-                toX: isSelf ? heads[a].lifelineX + 34 : heads[b].lifelineX,
-                y: arrowsTop + CGFloat(rowOfMessage(index)) * rowHeight,
-                text: message.text,
-                dashed: message.dashed,
-                isSelfMessage: isSelf,
-                head: message.head,
-                number: message.number
-            ))
-        }
-        var noteBoxes: [SequenceLayout.NoteBox] = []
-        for (noteIndex, note) in sortedNotes.enumerated() {
-            let ids = note.ids.compactMap { indexOf[$0] }
-            guard !ids.isEmpty else { continue }
-            let y = arrowsTop + CGFloat(rowOfNote(noteIndex)) * rowHeight - rowHeight / 2 + 4
-            let textWidth = measure(note.text, labelFontSize).width
-            let boxHeight = rowHeight - 10
-            var frame: CGRect
-            switch note.position {
-            case .rightOf:
-                let x0 = heads[ids[0]].lifelineX + 12
-                frame = CGRect(x: x0, y: y, width: textWidth + 16, height: boxHeight)
-            case .leftOf:
-                let x1 = heads[ids[0]].lifelineX - 12
-                frame = CGRect(x: x1 - textWidth - 16, y: y, width: textWidth + 16, height: boxHeight)
-            case .over:
-                let lo = heads[ids.min()!].lifelineX
-                let hi = heads[ids.max()!].lifelineX
-                let spanWidth = max(hi - lo + 48, textWidth + 16)
-                frame = CGRect(x: (lo + hi) / 2 - spanWidth / 2, y: y,
-                               width: spanWidth, height: boxHeight)
+        // ROW STREAM: messages, notes, and fragment frames consume rows in
+        // exact source order, each row sized to its content — the memo's
+        // "typed row stream" model. Legacy diagrams (hand-built, no events)
+        // synthesize a stream from messages + anchored notes.
+        var events = diagram.events
+        if events.isEmpty {
+            var noteIndex = 0
+            let sorted = diagram.notes.enumerated()
+                .sorted { ($0.element.afterMessage, $0.offset) < ($1.element.afterMessage, $1.offset) }
+            for index in diagram.messages.indices {
+                while noteIndex < sorted.count, sorted[noteIndex].element.afterMessage <= index {
+                    events.append(.note(sorted[noteIndex].offset)); noteIndex += 1
+                }
+                events.append(.message(index))
             }
-            frame.origin.x = max(frame.origin.x, 2)
-            noteBoxes.append(.init(text: note.text, frame: frame))
+            while noteIndex < sorted.count { events.append(.note(sorted[noteIndex].offset)); noteIndex += 1 }
         }
 
-        let totalRows = diagram.messages.count + sortedNotes.count
-        let bottom = arrowsTop + CGFloat(max(totalRows, 1)) * rowHeight
+        let noteRowHeight = rowHeight
+        let openRowHeight: CGFloat = 24
+        let dividerRowHeight: CGFloat = 22
+        let closeRowHeight: CGFloat = 12
+
+        struct OpenFrame {
+            let fragment: Int
+            let tabY: CGFloat
+            let depth: Int
+            var minX: CGFloat = .greatestFiniteMagnitude
+            var maxX: CGFloat = -.greatestFiniteMagnitude
+            var dividers: [SequenceLayout.Frame.Divider] = []
+        }
+        var arrows: [SequenceLayout.Arrow] = []
+        var noteBoxes: [SequenceLayout.NoteBox] = []
+        var frames: [SequenceLayout.Frame] = []
+        var frameStack: [OpenFrame] = []
+        var y = arrowsTop
+
+        func widen(_ lo: CGFloat, _ hi: CGFloat) {
+            for i in frameStack.indices {
+                frameStack[i].minX = min(frameStack[i].minX, lo)
+                frameStack[i].maxX = max(frameStack[i].maxX, hi)
+            }
+        }
+
+        for event in events {
+            switch event {
+            case .message(let index):
+                let message = diagram.messages[index]
+                guard let a = indexOf[message.from], let b = indexOf[message.to] else { continue }
+                let isSelf = a == b
+                let toX = isSelf ? heads[a].lifelineX + 34 : heads[b].lifelineX
+                arrows.append(SequenceLayout.Arrow(
+                    fromX: heads[a].lifelineX, toX: toX,
+                    y: y + rowHeight - 14,
+                    text: message.text, dashed: message.dashed,
+                    isSelfMessage: isSelf, head: message.head, number: message.number))
+                widen(min(heads[a].lifelineX, toX), max(heads[a].lifelineX, toX))
+                y += rowHeight
+            case .note(let index):
+                let noteItem = diagram.notes[index]
+                let ids = noteItem.ids.compactMap { indexOf[$0] }
+                guard !ids.isEmpty else { y += noteRowHeight; continue }
+                let textWidth = measure(noteItem.text, labelFontSize).width
+                let boxHeight = noteRowHeight - 10
+                var frame: CGRect
+                switch noteItem.position {
+                case .rightOf:
+                    frame = CGRect(x: heads[ids[0]].lifelineX + 12, y: y + 4,
+                                   width: textWidth + 16, height: boxHeight)
+                case .leftOf:
+                    let x1 = heads[ids[0]].lifelineX - 12
+                    frame = CGRect(x: x1 - textWidth - 16, y: y + 4,
+                                   width: textWidth + 16, height: boxHeight)
+                case .over:
+                    let lo = heads[ids.min()!].lifelineX
+                    let hi = heads[ids.max()!].lifelineX
+                    let spanWidth = max(hi - lo + 48, textWidth + 16)
+                    frame = CGRect(x: (lo + hi) / 2 - spanWidth / 2, y: y + 4,
+                                   width: spanWidth, height: boxHeight)
+                }
+                frame.origin.x = max(frame.origin.x, 2)
+                noteBoxes.append(.init(text: noteItem.text, frame: frame))
+                widen(frame.minX, frame.maxX)
+                y += noteRowHeight
+            case .open(let fragment):
+                frameStack.append(OpenFrame(fragment: fragment, tabY: y, depth: frameStack.count))
+                y += openRowHeight
+            case .divider(let fragment, let label):
+                if let top = frameStack.lastIndex(where: { $0.fragment == fragment }) {
+                    frameStack[top].dividers.append(.init(y: y + dividerRowHeight / 2, label: label))
+                }
+                y += dividerRowHeight
+            case .close(let fragment):
+                guard let top = frameStack.lastIndex(where: { $0.fragment == fragment }) else { continue }
+                let open = frameStack.remove(at: top)
+                let spec = diagram.fragments[open.fragment]
+                // Content extent, or the full participant span when empty;
+                // nesting depth pads outward so sibling borders never touch.
+                var lo = open.minX, hi = open.maxX
+                if lo > hi {
+                    lo = heads.first?.lifelineX ?? margin
+                    hi = heads.last?.lifelineX ?? lo
+                }
+                let pad: CGFloat = 18
+                let labelWidth = measure((spec.label ?? ""), labelFontSize).width
+                    + measure(spec.kind.rawValue, labelFontSize).width + 40
+                let rect = CGRect(x: lo - pad - CGFloat(open.depth) * 6,
+                                  y: open.tabY + 4,
+                                  width: max(hi - lo + 2 * pad + CGFloat(open.depth) * 12, labelWidth),
+                                  height: y - open.tabY + closeRowHeight - 8)
+                frames.append(.init(kind: spec.kind.rawValue, label: spec.label,
+                                    rect: rect, dividers: open.dividers))
+                widen(rect.minX, rect.maxX)
+                y += closeRowHeight
+            }
+        }
+        // Outermost first so the renderer paints outer frames beneath inner.
+        frames.sort { $0.rect.width * $0.rect.height > $1.rect.width * $1.rect.height }
+
+        let bottom = max(y, arrowsTop + rowHeight)
         // Self-message labels sit to the right of the loop; widen the canvas
         // so a self-message on the last lifeline doesn't clip its label.
         var width = x - 24 + margin
@@ -762,12 +827,14 @@ extension DiagramLayoutEngine {
             width = max(width, labelRight + margin)
         }
         for box in noteBoxes { width = max(width, box.frame.maxX + margin) }
+        for frame in frames { width = max(width, frame.rect.maxX + margin) }
         return SequenceLayout(
             size: CGSize(width: width, height: bottom + margin),
             heads: heads,
             lifelineBottom: bottom,
             arrows: arrows,
-            notes: noteBoxes
+            notes: noteBoxes,
+            frames: frames
         )
     }
 

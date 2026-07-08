@@ -25,6 +25,9 @@ extension DiagramScene {
                 // Note boxes are opaque rectangles in the message field; the
                 // linter must see them so a crossing arrow gets flagged.
                 Node(id: "note: \(note.text)", frame: note.frame, isContainer: false)
+            } + layout.frames.map { frame in
+                // Fragment frames legitimately contain rows: containers.
+                Node(id: "\(frame.kind): \(frame.label ?? "")", frame: frame.rect, isContainer: true)
             },
             // One Edge per message arrow, routed along its row. A normal message
             // is the horizontal segment from sender to receiver lifeline. A
