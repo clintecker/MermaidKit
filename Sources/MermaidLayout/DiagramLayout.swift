@@ -800,9 +800,13 @@ public enum DiagramLayoutEngine {
         let ordered = barycenterOrder(layers: layers, edges: segmentEdges)
         var breadth: [String: CGFloat] = [:]
         for layer in ordered { for id in layer { breadth[id] = allSizes[id]?.width ?? 0 } }
-        let xCenter = brandesKoepfX(
+        var xCenter = brandesKoepfX(
             layers: ordered, segments: segmentEdges, breadth: breadth,
             dummies: dummies, minGap: nodeGap)
+        // Same near-alignment jog fix as the flowchart pipeline: BK's
+        // balancing leaves single-parent chains a few points off centre.
+        straightenChains(layers: ordered, segments: segmentEdges,
+                         breadth: breadth, minGap: nodeGap, center: &xCenter)
         var minCross = CGFloat.greatestFiniteMagnitude
         var maxCross = -CGFloat.greatestFiniteMagnitude
         for layer in ordered {
