@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.3.0
+
+The gallery becomes the documentation, and the linter learns to read.
+
+- **Self-referential fixtures**: every example diagram is now about
+  MermaidKit itself — the class diagram is the real public API, the sankey
+  hero is the render pipeline, the gantt/timeline/gitgraph are the actual
+  project history, the xychart plots the published benchmark numbers. The
+  same 23 files are the gallery, the lint corpus, and the benchmark suite.
+- **New linter invariant, `edge-cuts-label` (error)**: an edge traveling
+  through bare label text fails CI. `DiagramScene.Label` gained
+  `anchorEdge` (an edge label sits on its own route by design) and `backed`
+  (an opaque chip interrupts a crossing line; the text stays readable) so
+  the check flags only genuine defects. Found and fixed a real one on
+  arrival: sankey's outboard labels now draw on canvas chips.
+- **gitgraph engine upgrades** (all exposed by real-word fixture labels):
+  commit columns space adaptively by measured label width; auto-generated
+  ids (`c1`, `merge2`) no longer render as labels; a label whose dot has a
+  branch/merge leg below it flips above the rail (or slides aside when a
+  tag occupies the top).
+- Docs: benchmark table re-measured on the 0.2.0 engine (worst 24.7 ms,
+  most types under 12 ms); every claim audited against the code.
+
+Model additions (pre-1.0 reshape per the stability policy):
+`GitGraph.Commit.hasExplicitID`, `GitGraphLayout.Commit.label/labelCenter`,
+`DiagramScene.Label.anchorEdge/backed` — all defaulted where possible.
+
 ## 0.2.0
 
 ELK-inspired layout upgrades ("what can we learn from the Eclipse Layout
