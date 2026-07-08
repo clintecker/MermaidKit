@@ -1,5 +1,3 @@
-# Live once MermaidKit is its own repository (GitHub ignores nested workflow
-# files while it lives inside Quoin).
 name: CI
 
 on:

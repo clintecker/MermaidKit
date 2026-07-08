@@ -50,7 +50,7 @@ public enum MermaidRenderer {
     }
 
     /// The diagram as a single-attachment attributed string, for embedding in
-    /// a text view (how Quoin's editor consumes it). Nil when not Mermaid.
+    /// a text view (how a markdown editor embeds it). Nil when not Mermaid.
     public static func attachmentString(source: String, theme: DiagramTheme,
                                         spacing: DiagramSpacing = .regular) -> NSAttributedString? {
         DiagramRenderer.attachmentString(source: source, theme: theme, spacing: spacing)

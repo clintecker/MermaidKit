@@ -86,7 +86,7 @@ The compiler's exhaustive-switch errors walk you to every site.
 1. Add a **dense** fixture at `Fixtures/diagrams/venn.mmd` — worst-realistic,
    not minimal: long labels, many elements, edge cases.
 2. Iterate against the linter:
-   `QUOIN_LINT_TYPE=venn swift test --filter testLintSingleType`
+   `MERMAIDKIT_LINT_TYPE=venn swift test --filter testLintSingleType`
    until zero errors, then add `venn` to `LayoutLintTests`' enforced set.
 3. **Render it and look at it** — the linter is necessary, not sufficient.
 4. Add adversarial cases (`AdversarialInputTests`) for your syntax.

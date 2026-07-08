@@ -8,9 +8,9 @@ Written 2026-07-08 against MermaidKit v0.2.0.
 MermaidKit renders [Mermaid](https://mermaid.js.org) diagrams natively on
 Apple platforms — pure Swift + CoreGraphics, no JavaScript, no WebView,
 zero dependencies. 23 diagram types, a SwiftUI drop-in view, images and
-attributed-string attachments, themeable with one value. Extracted from
-Quoin (a native markdown editor), which consumes it from GitHub like any
-other app. MIT.
+attributed-string attachments, themeable with one value. Extracted from a
+native markdown editor, which consumes it from GitHub like any other app.
+MIT.
 
 - Repo: https://github.com/clintecker/MermaidKit
 - Latest release: v0.2.0 ("ELK-grade layout": network-simplex layering,
@@ -127,7 +127,7 @@ line-by-line against the code. The site must keep that register:
 3. **How it's verified** — the geometry-linter story. This is the section
    that earns engineers' respect.
 4. **Get started** — install + the three API entry points + theming.
-5. **Footer** — GitHub, release, license, "extracted from Quoin".
+5. **Footer** — GitHub, release, license.
 
 Single page is fine. Fast, static, readable on a phone. The diagrams carry
 the visual identity — the design should stay quiet around them (they're

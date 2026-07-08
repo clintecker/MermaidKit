@@ -12,7 +12,7 @@ import UIKit
 
 /// Draws parsed Mermaid diagrams in the Graphite design language: SF
 /// labels, hairline strokes, radius-8 blocks, semantic tints. Layout comes
-/// from the platform-free engine in QuoinCore; this file only draws.
+/// from the platform-free MermaidLayout engine; this file only draws.
 enum DiagramRenderer {
 
     private final class Entry {

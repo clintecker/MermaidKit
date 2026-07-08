@@ -229,10 +229,9 @@ MermaidKit renders diagrams in a native Apple aesthetic (system fonts, your
 theme's colors) rather than pixel-cloning mermaid.js's default skin. Same
 structure, native skin.
 
-**Why macOS 14 / iOS 17?** MermaidKit was extracted from
-[Quoin](https://github.com/clintecker/quoin), which targets those. Nothing
-fundamental blocks lower floors; it's tracked, and PRs verifying older OSes
-are welcome.
+**Why macOS 14 / iOS 17?** Those are the floors of the app MermaidKit was
+extracted from. Nothing fundamental blocks lower floors; it's tracked, and
+PRs verifying older OSes are welcome.
 
 **Is it safe to render untrusted input?** That's the design point of the
 input caps, numeric sanitation, and the adversarial suite. No network, no
@@ -247,6 +246,4 @@ files are deliberately independent.
 
 ## License
 
-MIT. MermaidKit was extracted from
-[Quoin](https://github.com/clintecker/quoin), a native WYSIWYG markdown
-editor, which consumes it as a package.
+MIT.

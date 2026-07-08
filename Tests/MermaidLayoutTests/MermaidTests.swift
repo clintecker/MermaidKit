@@ -123,7 +123,7 @@ final class MermaidParserTests: XCTestCase {
             Origins
               CommonMark
             Tools
-              Quoin
+              Typora
               Obsidian
         """)
         guard case .mindmap(let mindmap) = diagram else { return XCTFail("expected mindmap") }
@@ -132,7 +132,7 @@ final class MermaidParserTests: XCTestCase {
         XCTAssertEqual(mindmap.root.children.map(\.label), ["Origins", "Tools"])
         // Deeper indentation nests under the right parent.
         XCTAssertEqual(mindmap.root.children[0].children.map(\.label), ["CommonMark"])
-        XCTAssertEqual(mindmap.root.children[1].children.map(\.label), ["Quoin", "Obsidian"])
+        XCTAssertEqual(mindmap.root.children[1].children.map(\.label), ["Typora", "Obsidian"])
     }
 
     func testMindmapShapeStripping() {

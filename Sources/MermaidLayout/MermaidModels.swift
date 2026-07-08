@@ -2,7 +2,7 @@ import Foundation
 
 // Parsed Mermaid diagram models (the data types). Parsing lives in
 // MermaidParser; per-type layout in DiagramLayout*.swift; drawing in
-// QuoinRender/DiagramRenderer. Split out of MermaidParser.swift so the
+// the render layer's DiagramRenderer. Split out of MermaidParser.swift so the
 // parser file holds logic, not declarations.
 
 /// A Mermaid `flowchart` / `graph`: shaped nodes joined by edges, laid out

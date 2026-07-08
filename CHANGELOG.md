@@ -36,7 +36,7 @@ Kernel" — the answer, implemented):
 
 ## Unreleased (pre-0.1)
 
-Initial extraction from [Quoin](https://github.com/clintecker/quoin).
+Initial public release — extracted from the markdown editor it grew inside.
 
 - 23 Mermaid diagram types parsed, laid out, and rendered natively
   (Swift + CoreGraphics, zero dependencies).

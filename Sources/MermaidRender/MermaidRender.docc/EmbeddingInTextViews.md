@@ -24,8 +24,8 @@ selection, copy, layout reflow around the paragraph — works unmodified.
 
 ## Patterns from a production host
 
-MermaidKit was extracted from the Quoin markdown editor, which uses exactly
-this API. Conventions that proved out:
+MermaidKit was extracted from a production markdown editor that uses
+exactly this API. Conventions that proved out:
 
 - **Tag the source onto the range.** Store the original Mermaid text in a
   custom attribute on the attachment's range, so click-to-edit and
