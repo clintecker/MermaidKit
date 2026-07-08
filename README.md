@@ -41,8 +41,8 @@ Embedding Mermaid today usually means shipping mermaid.js inside a
 `WKWebView`: a JS runtime per diagram, async round-trips, non-native text,
 and a web process in your memory footprint. MermaidKit renders the same
 source natively and synchronously — every diagram type below renders cold in
-**under 20 ms** on Apple silicon, most in **under 10 ms**, and results are
-cached per (source, appearance).
+**under 25 ms** on Apple silicon, most in **under 12 ms**, and results are
+cached per (source, theme, spacing).
 
 |  | MermaidKit | mermaid.js + WKWebView | [BeautifulMermaid](https://github.com/lukilabs/beautiful-mermaid-swift) |
 |---|---|---|---|
@@ -51,7 +51,9 @@ cached per (source, appearance).
 | Dependencies | **none** | mermaid.js bundle | elk-swift |
 | Rendering | sync, ~ms, cached | async round-trip | sync + async |
 | Output | `NSImage`/`UIImage`, `NSAttributedString`, SwiftUI | HTML/SVG in webview | image, SVG, ASCII |
-| Layout verification | **geometric linter in CI** | — | — |
+| Layout engine | network-simplex layering, label-space reservation, fixed-side ports | dagre / ELK | elk-swift |
+| Layout verification | **geometric linter in CI** + stability tests | — | — |
+| Density control | `DiagramSpacing` presets | config | — |
 | Syntax coverage | core syntax per type (see matrix) | reference | core syntax, 6 types |
 
 If you need SVG output, iOS 15, or pixel-parity with mermaid.js, those other
@@ -113,18 +115,18 @@ smaller). Measured by `RenderBenchmarks`, which fails CI if any type exceeds
 
 | Diagram | Cold render | Diagram | Cold render |
 |---|---:|---|---:|
-| architecture | 18.6 ms | packet | 3.2 ms |
-| block | 3.2 ms | pie | 2.1 ms |
-| c4 | 8.7 ms | quadrant | 3.8 ms |
-| class | 9.2 ms | radar | 1.9 ms |
-| er | 7.6 ms | requirement | 10.7 ms |
-| flowchart | 10.5 ms | sankey | 9.4 ms |
-| gantt | 3.0 ms | sequence | 7.1 ms |
-| gitgraph | 2.6 ms | state | 10.9 ms |
-| journey | 4.4 ms | timeline | 5.9 ms |
-| kanban | 4.7 ms | treemap | 3.1 ms |
-| mindmap | 7.4 ms | xychart | 2.0 ms |
-| zenuml | 7.0 ms | | |
+| architecture | 24.7 ms | packet | 3.3 ms |
+| block | 3.8 ms | pie | 2.3 ms |
+| c4 | 9.8 ms | quadrant | 3.8 ms |
+| class | 11.1 ms | radar | 2.0 ms |
+| er | 8.3 ms | requirement | 10.3 ms |
+| flowchart | 11.6 ms | sankey | 10.2 ms |
+| gantt | 3.0 ms | sequence | 7.8 ms |
+| gitgraph | 2.5 ms | state | 10.9 ms |
+| journey | 4.6 ms | timeline | 5.7 ms |
+| kanban | 5.4 ms | treemap | 2.9 ms |
+| mindmap | 7.8 ms | xychart | 1.8 ms |
+| zenuml | 9.5 ms | | |
 
 Rendering is synchronous by design: at these times a first render in a
 SwiftUI `body` is cheaper than a state round-trip, and repeat renders hit the
@@ -154,8 +156,15 @@ Two targets:
   (frames, polylines). Text measurement is injected (`DiagramTextMeasurer`),
   so layout is fully testable without a display server.
 - **MermaidRender** — CoreGraphics/CoreText drawing on macOS 14+, iOS 17+,
-  and visionOS 1+. Building the package requires Xcode 16+ (Swift 6 tools). The only styling input is `DiagramTheme` (7 colors + a
-  dark-mode flag).
+  and visionOS 1+. Building the package requires Xcode 16+ (Swift 6 tools).
+  The styling inputs are `DiagramTheme` (six colors, a categorical palette,
+  and a dark-mode flag) and `DiagramSpacing` (layout density).
+
+The layered types (flowchart, class, ER, state) use network-simplex layer
+assignment — the same strategy ELK Layered and Graphviz dot default to —
+with label-space reservation and declaration-order stability, so diagrams
+stay compact, labels stay readable, and small edits don't reshuffle the
+layout (all three properties are enforced by tests).
 
 ### The layout linter
 
@@ -177,14 +186,15 @@ layout. Contributions welcome.
   to the environment color scheme; `spacing` is the density knob
   (`.compact` / `.regular` / `.comfortable`, or custom gaps — consulted by
   flowchart, class, ER, state, and architecture layouts).
-- `DiagramTheme` — 7 colors + a categorical `palette` (node tints, pie
+- `DiagramTheme` — six colors + a categorical `palette` (node tints, pie
   slices, sankey bands…); override the palette to re-skin all 23 types at
   once. See the Theming article in the DocC docs.
-- `MermaidRenderer.image(source:theme:)` — one-shot render, auto-sized;
-  an `async` twin renders off the calling thread (in async contexts Swift
-  resolves to it automatically).
-- `MermaidRenderer.attachmentString(source:theme:)` — the diagram as a
-  single-attachment `NSAttributedString` for embedding in text views.
+- `MermaidRenderer.image(source:theme:spacing:)` — one-shot render,
+  auto-sized; `renderImage(...)` is the async sibling that renders off the
+  calling thread and propagates cancellation (deliberately a distinct name,
+  so the cheap sync cache-hit path stays reachable from async contexts).
+- `MermaidRenderer.attachmentString(source:theme:spacing:)` — the diagram
+  as a single-attachment `NSAttributedString` for embedding in text views.
 - `MermaidRenderer.textMeasurer` — the renderer's own CoreText measurer;
   pass it to `DiagramLayoutEngine.layout` / `DiagramScene.lower` when you
   want layout or lint geometry to match the render exactly.

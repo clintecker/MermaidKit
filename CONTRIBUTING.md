@@ -17,7 +17,7 @@ layout linter.
 - `swift test` and `swift test --package-path MermaidKit` must stay green.
 - **Layout changes are judged by geometry.** Every type's dense fixture in
   `Fixtures/diagrams/` must lint clean (`LayoutLintTests`); iterate on one
-  type with `QUOIN_LINT_TYPE=<type> swift test --filter testLintSingleType`.
+  type with `MERMAIDKIT_LINT_TYPE=<type> swift test --filter testLintSingleType`.
   The linter is necessary, not sufficient — also render your fixture and
   *look at it*.
 - **The parser never crashes.** New numeric fields go through

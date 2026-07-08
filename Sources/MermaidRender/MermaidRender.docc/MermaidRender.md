@@ -18,7 +18,7 @@ Three ways in, from highest-level to lowest:
   single-attachment `NSAttributedString` for embedding in a text view.
 
 All rendering is synchronous (every built-in diagram type renders cold in
-under 20 ms on Apple silicon; see the repository README for per-type
+under 25 ms on Apple silicon; see the repository README for per-type
 numbers) and cached per (source, appearance).
 
 ## Topics
@@ -33,6 +33,7 @@ numbers) and cached per (source, appearance).
 
 - <doc:Theming>
 - ``DiagramTheme``
+- ``MermaidLayout/DiagramSpacing``
 
 ### Embedding in text views
 

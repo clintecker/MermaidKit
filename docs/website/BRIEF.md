@@ -1,7 +1,7 @@
 # MermaidKit website — context package for the design session
 
 Everything a design/build session needs to create the GitHub Pages site.
-Written 2026-07-08 against MermaidKit v0.1.1.
+Written 2026-07-08 against MermaidKit v0.2.0.
 
 ## What MermaidKit is (the one-paragraph truth)
 
@@ -13,7 +13,9 @@ Quoin (a native markdown editor), which consumes it from GitHub like any
 other app. MIT.
 
 - Repo: https://github.com/clintecker/MermaidKit
-- Latest release: v0.1.1
+- Latest release: v0.2.0 ("ELK-grade layout": network-simplex layering,
+  label-space reservation, fixed-side ports, DiagramSpacing density presets,
+  edit stability — see CHANGELOG)
 - Swift Package Index (once submitted): https://swiftpackageindex.com/clintecker/MermaidKit
 - Author: Clint Ecker (clintecker on GitHub)
 
@@ -53,8 +55,13 @@ other app. MIT.
 - Zero dependencies. Swift 6 language mode, zero concurrency warnings.
 - Platforms: macOS 14+, iOS 17+, visionOS 1+. Xcode 16+ to build.
 - Performance (Apple silicon, cold, **rasterization included**): worst
-  fixture ~19ms (architecture), most types 2–10ms, cached thereafter.
-  Per-type table in README. CI enforces <250ms.
+  fixture ~25ms (architecture), most types 2–12ms, cached thereafter.
+- Layout engine credentials (site-worthy): network-simplex layer assignment
+  (ELK/Graphviz-dot's default strategy), label-space reservation during
+  layout, author-declared ports honored, `.compact`/`.regular`/
+  `.comfortable` density presets, and edit stability verified by scene-diff
+  tests (same-width rename moves nothing). Per-type performance table in
+  README; CI enforces <250ms.
 - Robustness: fuzz-style adversarial suite in CI; numeric sanitation at the
   parser boundary; input caps mirroring mermaid.js (50k chars; 500 edges
   for flowcharts). `MermaidParser.diagnose()` explains failures with line
@@ -91,7 +98,7 @@ let image = MermaidRenderer.image(
 
 Install:
 ```swift
-.package(url: "https://github.com/clintecker/MermaidKit.git", from: "0.1.1")
+.package(url: "https://github.com/clintecker/MermaidKit.git", from: "0.2.0")
 ```
 
 ## Voice and honesty rules (non-negotiable, hard-won)

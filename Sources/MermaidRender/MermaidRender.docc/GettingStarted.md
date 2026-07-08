@@ -36,10 +36,11 @@ a narrower container — never up. If the source isn't recognized Mermaid, it
 degrades to the raw text in monospaced type, so a typo'd diagram stays
 inspectable instead of vanishing.
 
-Pass an explicit theme to opt out of appearance-following:
+Pass an explicit theme to opt out of appearance-following, and a spacing
+preset to control density:
 
 ```swift
-MermaidView(source, theme: DiagramTheme(prefersDark: true))
+MermaidView(source, theme: DiagramTheme(prefersDark: true), spacing: .compact)
 ```
 
 ## AppKit/UIKit: images
@@ -77,7 +78,7 @@ parsing returns `nil` fast.
 ## Performance model
 
 Rendering is synchronous and cached per (source, appearance). Cold renders
-are single-digit milliseconds for most types (worst measured: ~19 ms for a
-dense architecture diagram, rasterization included), so calling from a SwiftUI `body` or a
+are under 12 ms for most types (worst measured: ~25 ms for a dense
+architecture diagram, rasterization included), so calling from a SwiftUI `body` or a
 main-thread layout pass is by design. If you're rendering hundreds of
 diagrams in one pass, do it off-main and hand images back.

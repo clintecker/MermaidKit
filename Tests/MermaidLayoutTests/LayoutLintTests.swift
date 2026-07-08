@@ -35,13 +35,13 @@ final class LayoutLintTests: XCTestCase {
             .appendingPathComponent("Fixtures/diagrams")
     }
 
-    /// Self-verification for a single type: `QUOIN_LINT_TYPE=architecture swift
+    /// Self-verification for a single type: `MERMAIDKIT_LINT_TYPE=architecture swift
     /// test --filter testLintSingleType` lints only that fixture and FAILS with
     /// the violation list unless it is error-free. The red/green a fix loop
     /// iterates against — no rendering, no vision.
     func testLintSingleType() throws {
-        guard let type = ProcessInfo.processInfo.environment["QUOIN_LINT_TYPE"] else {
-            throw XCTSkip("set QUOIN_LINT_TYPE=<type> to lint one fixture")
+        guard let type = ProcessInfo.processInfo.environment["MERMAIDKIT_LINT_TYPE"] else {
+            throw XCTSkip("set MERMAIDKIT_LINT_TYPE=<type> to lint one fixture")
         }
         let source = try String(contentsOf: fixturesDir.appendingPathComponent("\(type).mmd"), encoding: .utf8)
         guard let diagram = MermaidParser.parse(source) else { return XCTFail("\(type): did not parse") }

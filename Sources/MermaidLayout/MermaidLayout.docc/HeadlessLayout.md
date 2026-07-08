@@ -27,7 +27,8 @@ Three measurers you might pass:
 ```swift
 guard let diagram = MermaidParser.parse(source) else { … }
 
-// Typed, per-type layout (frames, polylines, everything positioned):
+// Typed, per-type layout (frames, polylines, everything positioned).
+// The main engines also take a density knob: `spacing: .compact`.
 switch diagram {
 case .flowchart(let chart):
     let layout = DiagramLayoutEngine.layout(chart, measure: measurer)

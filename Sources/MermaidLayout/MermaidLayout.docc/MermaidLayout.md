@@ -32,6 +32,7 @@ lintable, and consumable by backends other than CoreGraphics.
 - <doc:HeadlessLayout>
 - ``DiagramLayoutEngine``
 - ``DiagramTextMeasurer``
+- ``DiagramSpacing``
 
 ### Geometry verification
 

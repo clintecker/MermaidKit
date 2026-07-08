@@ -25,7 +25,7 @@ public enum MermaidRenderer {
     /// Renders off the calling thread — for hosts batching many diagrams or
     /// staying paranoid about main-thread time (a single cold render is
     /// under ten milliseconds for most types; the worst dense fixture is
-    /// ~19 ms rasterized). Shares ``image(source:theme:)``'s render cache. Deliberately
+    /// ~25 ms rasterized). Shares the sync API's render cache. Deliberately
     /// NOT an overload of `image`: a same-name async twin silently captures
     /// every call in async contexts, making the cheap sync cache-hit path
     /// unreachable there. Cancelling the calling task cancels the render.
