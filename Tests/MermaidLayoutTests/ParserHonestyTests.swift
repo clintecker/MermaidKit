@@ -393,3 +393,45 @@ extension ParserHonestyTests {
         XCTAssertEqual(s.messages.count, 2, "end closed the box, not a phantom fragment")
     }
 }
+
+extension ParserHonestyTests {
+    func testCreateAndDestroyLifecycle() throws {
+        let s = try seqPub("""
+        A->>B: begin
+        create participant W as Worker
+        B->>W: spawn
+        W-->>B: done
+        destroy W
+        B->>A: finished
+        """)
+        let measure: DiagramTextMeasurer = { t, size in
+            CGSize(width: CGFloat(max(t.count, 1)) * size * 0.6, height: size + 4)
+        }
+        let layout = DiagramLayoutEngine.layout(s, measure: measure)
+        let worker = layout.heads.first(where: { $0.label == "Worker" })!
+        let a = layout.heads.first(where: { $0.label == "A" })!
+        XCTAssertGreaterThan(worker.frame.minY, a.frame.maxY,
+                             "created head appears mid-diagram, not at the top")
+        XCTAssertNotNil(worker.lifelineEndY, "destroyed lifeline ends early")
+        XCTAssertTrue(worker.showsDestroyCross)
+        XCTAssertLessThan(worker.lifelineEndY!, layout.lifelineBottom)
+    }
+}
+
+extension ParserHonestyTests {
+    func testBrLineBreaksGrowRows() throws {
+        let s = try seqPub("""
+        A->>B: one<br/>two<br/>three
+        Note over A,B: first line<br/>second line
+        B->>A: done
+        """)
+        let measure: DiagramTextMeasurer = { t, size in
+            CGSize(width: CGFloat(max(t.count, 1)) * size * 0.6, height: size + 4)
+        }
+        let layout = DiagramLayoutEngine.layout(s, measure: measure)
+        // Three-line message: its row grew, pushing the note and next arrow down.
+        XCTAssertGreaterThan(layout.arrows[1].y - layout.arrows[0].y, 34 * 2 - 1,
+                             "multiline rows must consume extra height")
+        XCTAssertGreaterThan(layout.notes[0].frame.height, 24, "two-line note grows its box")
+    }
+}

@@ -118,17 +118,29 @@ extension DiagramRenderer {
             }
         }
 
-        // Lifelines behind everything.
+        // Lifelines behind everything (per-head end for destroyed ones).
         for head in layout.heads {
+            let end = head.lifelineEndY ?? layout.lifelineBottom
             context.saveGState()
             context.setStrokeColor(resolvedCGColor(hairline))
             context.setLineWidth(1)
             context.setLineDash(phase: 0, lengths: [3, 3])
             context.beginPath()
             context.move(to: CGPoint(x: head.lifelineX, y: head.frame.maxY))
-            context.addLine(to: CGPoint(x: head.lifelineX, y: layout.lifelineBottom))
+            context.addLine(to: CGPoint(x: head.lifelineX, y: end))
             context.strokePath()
             context.restoreGState()
+            if head.showsDestroyCross {
+                let r: CGFloat = 6
+                context.setStrokeColor(resolvedCGColor(theme.ink.withAlphaComponent(0.7)))
+                context.setLineWidth(1.6)
+                context.beginPath()
+                context.move(to: CGPoint(x: head.lifelineX - r, y: end - r))
+                context.addLine(to: CGPoint(x: head.lifelineX + r, y: end + r))
+                context.move(to: CGPoint(x: head.lifelineX - r, y: end + r))
+                context.addLine(to: CGPoint(x: head.lifelineX + r, y: end - r))
+                context.strokePath()
+            }
         }
 
         // Activation bars: on the lifeline, above it but under arrows; nested
@@ -191,8 +203,12 @@ extension DiagramRenderer {
             fillStrokeBox(note.frame, radius: 3,
                           fill: theme.categoricalColor(2).withAlphaComponent(0.18),
                           stroke: theme.categoricalColor(2), in: context)
-            drawText(note.text, center: CGPoint(x: note.frame.midX, y: note.frame.midY),
-                     size: labelSize, color: theme.ink, in: context)
+            let lines = DiagramLayoutEngine.brLines(note.text)
+            let startY = note.frame.midY - CGFloat(lines.count - 1) * 6.5
+            for (i, line) in lines.enumerated() {
+                drawText(line, center: CGPoint(x: note.frame.midX, y: startY + CGFloat(i) * 13),
+                         size: labelSize, color: theme.ink, in: context)
+            }
         }
 
         for arrow in layout.arrows {
@@ -237,9 +253,13 @@ extension DiagramRenderer {
                         stroke: stroke, theme: theme, in: context)
                 }
                 if !arrow.text.isEmpty {
-                    drawText(arrow.text,
-                             center: CGPoint(x: (arrow.fromX + arrow.toX) / 2, y: arrow.y - 10),
-                             size: 10.5, color: theme.secondaryTextColor, in: context)
+                    let lines = DiagramLayoutEngine.brLines(arrow.text)
+                    for (i, line) in lines.enumerated() {
+                        let lineY = arrow.y - 10 - CGFloat(lines.count - 1 - i) * 12
+                        drawText(line,
+                                 center: CGPoint(x: (arrow.fromX + arrow.toX) / 2, y: lineY),
+                                 size: 10.5, color: theme.secondaryTextColor, in: context)
+                    }
                 }
             }
         }

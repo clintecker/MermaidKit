@@ -73,9 +73,13 @@ public struct SequenceLayout: Sendable {
     /// A participant's header box; its lifeline drops from `lifelineX`.
     public struct Head: Sendable {
         public let label: String
-        public let frame: CGRect
+        public var frame: CGRect
         /// Drawn as a stick figure (declared with `actor`) instead of a box.
         public let isActor: Bool
+        /// Where this lifeline stops (a `destroy` row); nil = the shared bottom.
+        public var lifelineEndY: CGFloat?
+        /// Draw the destruction cross at `lifelineEndY`.
+        public var showsDestroyCross: Bool = false
         /// X of the participant's vertical lifeline (the head's center).
         public var lifelineX: CGFloat { frame.midX }
         public init(label: String, frame: CGRect, isActor: Bool = false) {

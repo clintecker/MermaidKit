@@ -905,6 +905,26 @@ public enum MermaidParser {
                 }
                 continue
             }
+            if line.hasPrefix("create participant ") || line.hasPrefix("create actor ") {
+                let isActor = line.hasPrefix("create actor ")
+                var declaration = String(line.dropFirst(isActor ? 13 : 19))
+                let id: String
+                if let asRange = declaration.range(of: " as ") {
+                    id = String(declaration[..<asRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+                    note(id, label: String(declaration[asRange.upperBound...]).trimmingCharacters(in: .whitespaces),
+                         isActor: isActor)
+                } else {
+                    id = declaration.trimmingCharacters(in: .whitespaces)
+                    note(id, isActor: isActor)
+                }
+                if !id.isEmpty { events.append(.create(id)) }
+                continue
+            }
+            if line.hasPrefix("destroy ") {
+                let id = String(line.dropFirst(8)).trimmingCharacters(in: .whitespaces)
+                if !id.isEmpty { note(id); events.append(.destroy(id)) }
+                continue
+            }
             if line.hasPrefix("activate ") {
                 let id = String(line.dropFirst(9)).trimmingCharacters(in: .whitespaces)
                 if !id.isEmpty { note(id); events.append(.activate(id)) }

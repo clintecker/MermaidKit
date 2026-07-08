@@ -184,6 +184,10 @@ public struct SequenceDiagram: Hashable, Sendable {
         /// Explicit `activate X` / `deactivate X` statements.
         case activate(String)
         case deactivate(String)
+        /// `create participant X` — the head appears at this row.
+        case create(String)
+        /// `destroy X` — the lifeline ends with a cross at this row.
+        case destroy(String)
     }
 
     /// A `box [color] Label ... end` grouping of participants.

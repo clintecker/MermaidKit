@@ -666,6 +666,15 @@ extension DiagramLayoutEngine {
     /// widened for adjacent-participant message labels), one message arrow per
     /// row below, self-messages as loops. Pure geometry — the renderer only
     /// draws.
+    /// Splits on mermaid's `<br/>` (and `<br>`) message/note line breaks.
+    /// Public: the renderer draws the same lines the layout measured.
+    public static func brLines(_ text: String) -> [String] {
+        text.replacingOccurrences(of: "<br>", with: "<br/>")
+            .components(separatedBy: "<br/>")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+    }
+
     public static func layout(_ diagram: SequenceDiagram, measure: DiagramTextMeasurer) -> SequenceLayout {
         let margin: CGFloat = 12
         let headPaddingX: CGFloat = 14
@@ -681,7 +690,8 @@ extension DiagramLayoutEngine {
         for (i, participant) in diagram.participants.enumerated() { indexOf[participant.id] = i }
         for message in diagram.messages {
             guard let a = indexOf[message.from], let b = indexOf[message.to], abs(a - b) == 1 else { continue }
-            let needed = measure(message.text, labelFontSize).width + 24
+            let widest = brLines(message.text).map { measure($0, labelFontSize).width }.max() ?? 0
+            let needed = widest + 24
             let lo = min(a, b)
             columnWidth[lo] = max(columnWidth[lo], needed)
         }
@@ -768,22 +778,25 @@ extension DiagramLayoutEngine {
                 guard let a = indexOf[message.from], let b = indexOf[message.to] else { continue }
                 let isSelf = a == b
                 let toX = isSelf ? heads[a].lifelineX + 34 : heads[b].lifelineX
+                // Multiline labels stack above the arrow: the row grows.
+                let extraLines = CGFloat(max(brLines(message.text).count - 1, 0)) * 12
                 arrows.append(SequenceLayout.Arrow(
                     fromX: heads[a].lifelineX, toX: toX,
-                    y: y + rowHeight - 14,
+                    y: y + extraLines + rowHeight - 14,
                     text: message.text, dashed: message.dashed,
                     isSelfMessage: isSelf, head: message.head, number: message.number))
                 widen(min(heads[a].lifelineX, toX), max(heads[a].lifelineX, toX))
-                let arrowY = y + rowHeight - 14
+                let arrowY = y + extraLines + rowHeight - 14
                 if message.activatesTarget { openBar(message.to, at: arrowY) }
                 if message.deactivatesSender { closeBar(message.from, at: arrowY) }
-                y += rowHeight
+                y += rowHeight + extraLines
             case .note(let index):
                 let noteItem = diagram.notes[index]
                 let ids = noteItem.ids.compactMap { indexOf[$0] }
                 guard !ids.isEmpty else { y += noteRowHeight; continue }
-                let textWidth = measure(noteItem.text, labelFontSize).width
-                let boxHeight = noteRowHeight - 10
+                let lines = brLines(noteItem.text)
+                let textWidth = lines.map { measure($0, labelFontSize).width }.max() ?? 0
+                let boxHeight = max(noteRowHeight - 10, CGFloat(lines.count) * 13 + 9)
                 var frame: CGRect
                 switch noteItem.position {
                 case .rightOf:
@@ -803,7 +816,7 @@ extension DiagramLayoutEngine {
                 frame.origin.x = max(frame.origin.x, 2)
                 noteBoxes.append(.init(text: noteItem.text, frame: frame))
                 widen(frame.minX, frame.maxX)
-                y += noteRowHeight
+                y += boxHeight + 10
             case .open(let fragment):
                 frameStack.append(OpenFrame(fragment: fragment, tabY: y, depth: frameStack.count))
                 y += openRowHeight
@@ -816,6 +829,21 @@ extension DiagramLayoutEngine {
                 openBar(id, at: y + 4)   // consumes no row; the bar starts here
             case .deactivate(let id):
                 closeBar(id, at: y + 4)
+            case .create(let id):
+                // The participant's head drops to this row; its lifeline
+                // starts here instead of at the top.
+                if let index = indexOf[id] {
+                    heads[index].frame.origin.y = y + 4
+                    widen(heads[index].frame.minX, heads[index].frame.maxX)
+                }
+                y += rowHeight
+            case .destroy(let id):
+                if let index = indexOf[id] {
+                    heads[index].lifelineEndY = y + 10
+                    heads[index].showsDestroyCross = true
+                    closeBar(id, at: y + 10)   // any open bar dies with it
+                }
+                y += 18
             case .close(let fragment):
                 guard let top = frameStack.lastIndex(where: { $0.fragment == fragment }) else { continue }
                 let open = frameStack.remove(at: top)
