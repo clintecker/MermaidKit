@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.1
+
+- Fix the iOS build under Swift 6.1: `UIImage.accessibilityLabel` is
+  `@MainActor` in the iOS SDK, so the attachment path now sets it only
+  when already on the main thread (the real text-view embedding case);
+  `MermaidView`'s own accessibility label covers the view path regardless.
+  Local Swift 6.2 accepted the unguarded mutation — CI's 6.1 correctly
+  rejected it, and the CI step now preserves compiler diagnostics on
+  failure instead of swallowing them with `tail`.
+
 ## 0.4.0
 
 Three capabilities from the IR-compilation design review (docs/website has

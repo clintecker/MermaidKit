@@ -256,7 +256,14 @@ enum DiagramRenderer {
             #if canImport(AppKit)
             image.accessibilityDescription = altText
             #else
-            image.accessibilityLabel = altText
+            // UIImage.accessibilityLabel is @MainActor in the iOS SDK (NSImage's
+            // accessibilityDescription is not). Text-view embedding happens on
+            // the main thread in practice, so set it when that's true and skip
+            // otherwise — MermaidView's own accessibility label (set at the
+            // SwiftUI layer, always main-actor) covers the view path regardless.
+            if Thread.isMainThread {
+                MainActor.assumeIsolated { image.accessibilityLabel = altText }
+            }
             #endif
         }
         let attachment = NSTextAttachment()
