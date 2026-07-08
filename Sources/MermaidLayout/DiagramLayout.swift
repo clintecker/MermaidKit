@@ -661,24 +661,6 @@ public enum DiagramLayoutEngine {
         return back
     }
 
-    /// Longest-path layer assignment: every node starts at layer 0 and each
-    /// edge pushes its target at least one layer below its source. `edges`
-    /// must be acyclic (cycle back edges removed) so it terminates. Split out
-    /// of `orderedLayers` so the flowchart can insert dummy nodes for
-    /// multi-layer edges between assignment and ordering.
-    static func assignLayers(ids: [String], edges: [(String, String)]) -> [String: Int] {
-        var layerOf: [String: Int] = [:]
-        for id in ids { layerOf[id] = 0 }
-        for _ in 0..<(ids.count + 1) {
-            var changed = false
-            for (from, to) in edges {
-                guard let a = layerOf[from], let b = layerOf[to] else { continue }
-                if b < a + 1 { layerOf[to] = a + 1; changed = true }
-            }
-            if !changed { break }
-        }
-        return layerOf
-    }
 
     /// Barycenter crossing-minimization: repeatedly reorder each layer by the
     /// mean position of each node's predecessors. Empty layers are dropped.
