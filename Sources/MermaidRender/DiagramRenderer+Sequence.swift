@@ -56,6 +56,20 @@ extension DiagramRenderer {
         let stroke = theme.ink.withAlphaComponent(0.35)
         let hairline = theme.ink.withAlphaComponent(0.18)
 
+        // Box bands first of all — group backgrounds under everything.
+        for band in layout.boxBands {
+            context.setFillColor(resolvedCGColor(
+                theme.categoricalColor(band.colorIndex).withAlphaComponent(0.08)))
+            context.fill(band.rect)
+            context.setStrokeColor(resolvedCGColor(theme.hairline))
+            context.setLineWidth(1)
+            context.stroke(band.rect)
+            if let label = band.label {
+                drawText(label, center: CGPoint(x: band.rect.midX, y: band.rect.minY + 9),
+                         size: 9, weight: .semibold, color: theme.tertiaryTextColor, in: context)
+            }
+        }
+
         // Fragment frames first — everything else draws on top of them.
         for frame in layout.frames {
             if frame.kind == "rect" {

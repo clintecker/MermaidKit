@@ -186,8 +186,19 @@ public struct SequenceDiagram: Hashable, Sendable {
         case deactivate(String)
     }
 
+    /// A `box [color] Label ... end` grouping of participants.
+    public struct Box: Hashable, Sendable {
+        public let label: String?
+        public let memberIDs: [String]
+        public init(label: String?, memberIDs: [String]) {
+            self.label = label; self.memberIDs = memberIDs
+        }
+    }
+
     /// Participants in first-appearance order (declared or first messaged).
     public var participants: [Participant]
+    /// Participant groupings drawn as background bands.
+    public var boxes: [Box] = []
     /// Notes, anchored between messages by `afterMessage`.
     public var notes: [Note] = []
     /// Combined fragments / rects, indexed by `Event.open/close/divider`.

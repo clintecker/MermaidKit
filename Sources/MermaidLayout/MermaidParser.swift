@@ -801,6 +801,8 @@ public enum MermaidParser {
 
         var notes: [SequenceDiagram.Note] = []
         var fragments: [SequenceDiagram.Fragment] = []
+        var boxes: [SequenceDiagram.Box] = []
+        var openBox: (label: String?, members: [String])?
         var events: [SequenceDiagram.Event] = []
         var openFragments: [Int] = []   // stack of fragment indices
         func note(_ id: String, label: String? = nil, isActor: Bool = false) {
@@ -834,13 +836,16 @@ public enum MermaidParser {
                 var isActor = false
                 if declaration.hasPrefix("participant ") { declaration = String(declaration.dropFirst(12)) }
                 else if declaration.hasPrefix("actor ") { declaration = String(declaration.dropFirst(6)); isActor = true }
+                let id: String
                 if let asRange = declaration.range(of: " as ") {
-                    let id = String(declaration[..<asRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+                    id = String(declaration[..<asRange.lowerBound]).trimmingCharacters(in: .whitespaces)
                     let label = String(declaration[asRange.upperBound...]).trimmingCharacters(in: .whitespaces)
                     note(id, label: label, isActor: isActor)
                 } else {
-                    note(declaration.trimmingCharacters(in: .whitespaces), isActor: isActor)
+                    id = declaration.trimmingCharacters(in: .whitespaces)
+                    note(id, isActor: isActor)
                 }
+                openBox?.members.append(id)
                 continue
             }
             // `Note right of A: text` / `Note left of A: text` /
@@ -890,7 +895,14 @@ public enum MermaidParser {
                 continue
             }
             if line == "end" {
-                if let top = openFragments.popLast() { events.append(.close(top)) }
+                if openBox != nil {
+                    // `end` closes the innermost construct: an open box wins
+                    // (boxes can't contain messages, so no ambiguity).
+                    boxes.append(.init(label: openBox!.label, memberIDs: openBox!.members))
+                    openBox = nil
+                } else if let top = openFragments.popLast() {
+                    events.append(.close(top))
+                }
                 continue
             }
             if line.hasPrefix("activate ") {
@@ -904,7 +916,22 @@ public enum MermaidParser {
                 continue
             }
             if line.hasPrefix("box ") || line == "box" {
-                continue // box groupings (pending)
+                // `box [color] Label` — the first token may be a CSS color or
+                // rgb(...)/transparent; everything else is the label.
+                var label: String? = line == "box" ? nil : String(line.dropFirst(4))
+                if let text = label {
+                    let tokens = text.split(separator: " ").map(String.init)
+                    let colorish = tokens.first.map { token in
+                        token.lowercased() == "transparent" || token.hasPrefix("rgb(")
+                            || token.hasPrefix("#")
+                            || ["aqua", "aliceblue", "lightblue", "lightgrey", "lightgreen",
+                                "lightyellow", "mistyrose", "lavender", "beige"].contains(token.lowercased())
+                    } ?? false
+                    label = colorish ? tokens.dropFirst().joined(separator: " ") : text
+                    if label?.isEmpty == true { label = nil }
+                }
+                openBox = (label, [])
+                continue
             }
 
             // Messages. Longest token first so `-->>` never part-matches as
@@ -953,8 +980,10 @@ public enum MermaidParser {
         guard !participants.isEmpty else { return nil }
         // Close any unclosed frames (author forgot `end`): tolerant, not fatal.
         while let top = openFragments.popLast() { events.append(.close(top)) }
+        if let box = openBox { boxes.append(.init(label: box.label, memberIDs: box.members)) }
         return SequenceDiagram(
             participants: order.compactMap { participants[$0] },
+            boxes: boxes,
             notes: notes,
             fragments: fragments,
             events: events,

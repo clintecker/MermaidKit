@@ -688,11 +688,15 @@ extension DiagramLayoutEngine {
 
         var heads: [SequenceLayout.Head] = []
         var x = margin
+        let boxed = Set(diagram.boxes.flatMap(\.memberIDs))
         for (i, participant) in diagram.participants.enumerated() {
             let width = columnWidth[i]
+            // Boxed participants drop 12pt so the band's label has clear
+            // headroom above their head boxes.
+            let headY = boxed.contains(participant.id) ? margin + 12 : margin
             heads.append(SequenceLayout.Head(
                 label: participant.label,
-                frame: CGRect(x: x, y: margin, width: width, height: headHeight),
+                frame: CGRect(x: x, y: headY, width: width, height: headHeight),
                 isActor: participant.isActor
             ))
             x += width + 24
@@ -857,6 +861,21 @@ extension DiagramLayoutEngine {
         }
         for box in noteBoxes { width = max(width, box.frame.maxX + margin) }
         for frame in frames { width = max(width, frame.rect.maxX + margin) }
+
+        // Box bands: full-height background groups around member heads.
+        var boxBands: [SequenceLayout.BoxBand] = []
+        for (index, box) in diagram.boxes.enumerated() {
+            let members = box.memberIDs.compactMap { indexOf[$0] }
+            guard !members.isEmpty else { continue }
+            let lo = members.map { heads[$0].frame.minX }.min()! - 8
+            let hi = members.map { heads[$0].frame.maxX }.max()! + 8
+            boxBands.append(.init(
+                label: box.label,
+                rect: CGRect(x: lo, y: margin - 6,
+                             width: hi - lo, height: bottom - margin + 12),
+                colorIndex: index))
+        }
+
         return SequenceLayout(
             size: CGSize(width: width, height: bottom + margin),
             heads: heads,
@@ -864,7 +883,8 @@ extension DiagramLayoutEngine {
             arrows: arrows,
             notes: noteBoxes,
             frames: frames,
-            bars: bars
+            bars: bars,
+            boxBands: boxBands
         )
     }
 

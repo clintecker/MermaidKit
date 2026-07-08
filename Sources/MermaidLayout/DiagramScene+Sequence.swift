@@ -28,6 +28,8 @@ extension DiagramScene {
             } + layout.frames.map { frame in
                 // Fragment frames legitimately contain rows: containers.
                 Node(id: "\(frame.kind): \(frame.label ?? "")", frame: frame.rect, isContainer: true)
+            } + layout.boxBands.map { band in
+                Node(id: "box: \(band.label ?? "")", frame: band.rect, isContainer: true)
             } + layout.bars.enumerated().map { index, bar in
                 // Activation bars are slim boxes ON the lifeline; arrows
                 // meeting them at their edge is design, and their 8pt width
@@ -83,6 +85,13 @@ extension DiagramScene {
                                   width: width, height: 14),
                     anchorEdge: index
                 )
+            } + layout.boxBands.compactMap { band -> Label? in
+                guard let text = band.label, !text.isEmpty else { return nil }
+                let width = DiagramScene.estimatedLabelSize(text).width
+                return Label(
+                    text: text,
+                    frame: CGRect(x: band.rect.midX - width / 2, y: band.rect.minY + 2,
+                                  width: width, height: 14))
             }
         )
     }

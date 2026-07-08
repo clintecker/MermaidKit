@@ -166,6 +166,16 @@ public struct SequenceLayout: Sendable {
     public var frames: [Frame] = []
     /// Activation bars on lifelines.
     public var bars: [Bar] = []
+    /// Participant-group background bands (`box ... end`).
+    public struct BoxBand: Sendable {
+        public let label: String?
+        public let rect: CGRect
+        public let colorIndex: Int
+        public init(label: String?, rect: CGRect, colorIndex: Int) {
+            self.label = label; self.rect = rect; self.colorIndex = colorIndex
+        }
+    }
+    public var boxBands: [BoxBand] = []
 }
 
 /// Placed pie chart: a disk of slices with a legend column to its right.

@@ -375,3 +375,21 @@ extension ParserHonestyTests {
         XCTAssertLessThan(bBar.top, bBar.bottom, "B's bar spans work...done")
     }
 }
+
+extension ParserHonestyTests {
+    func testBoxGroupsParticipants() throws {
+        let s = try seqPub("""
+        box Aqua MermaidKit internals
+            participant R as Renderer
+            participant C as Cache
+        end
+        participant H as Host
+        H->>R: draw
+        R->>C: lookup
+        """)
+        XCTAssertEqual(s.boxes.count, 1)
+        XCTAssertEqual(s.boxes[0].label, "MermaidKit internals", "color token is not part of the label")
+        XCTAssertEqual(s.boxes[0].memberIDs, ["R", "C"])
+        XCTAssertEqual(s.messages.count, 2, "end closed the box, not a phantom fragment")
+    }
+}

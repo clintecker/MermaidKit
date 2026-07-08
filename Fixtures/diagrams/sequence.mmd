@@ -1,11 +1,13 @@
 sequenceDiagram
     actor Host as Host App
     participant View as MermaidView
-    participant Rend as MermaidRenderer
-    participant Cache as RenderCache
-    participant Parse as MermaidParser
-    participant Lay as DiagramLayoutEngine
-    participant Scene as DiagramScene
+    box MermaidKit
+        participant Rend as MermaidRenderer
+        participant Cache as RenderCache
+        participant Parse as MermaidParser
+        participant Lay as DiagramLayoutEngine
+        participant Scene as DiagramScene
+    end
     participant CG as CoreGraphics
     Host->>View: body evaluation
     View->>View: resolve theme from colorScheme

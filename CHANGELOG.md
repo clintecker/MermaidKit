@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
+
+Sequence diagrams reach structural mermaid-parity for everyday syntax —
+the sequence-primitives research memo's Tier 1, shipped:
+
+- `box [color] Label ... end` participant groupings render as full-height
+  background bands (color tokens recognized and dropped; our theme
+  palette supplies the tint), heads dropping to give the band label
+  headroom; `end` disambiguates correctly between boxes and fragments.
 
 - Sequence diagrams: combined fragments render — `loop`/`alt`+`else`/
   `opt`/`par`+`and`/`critical`+`option`/`break` frames with kind tabs,
