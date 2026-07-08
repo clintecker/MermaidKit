@@ -30,4 +30,13 @@ jobs:
       - name: Build for iOS Simulator
         run: |
           set -o pipefail
-          xcodebuild -scheme MermaidRender             -destination 'generic/platform=iOS Simulator' build 2>&1 | tail -30
+          # Log to a file so compile DIAGNOSTICS survive failure — a bare
+          # `tail -30` once ate the error text and left only the list of
+          # failed compile commands.
+          if ! xcodebuild -scheme MermaidRender \
+            -destination 'generic/platform=iOS Simulator' build > ios-build.log 2>&1; then
+            grep -E "error:" ios-build.log | sort -u | head -40
+            tail -20 ios-build.log
+            exit 1
+          fi
+          tail -5 ios-build.log
