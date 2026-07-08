@@ -45,10 +45,12 @@ extension DiagramLayoutEngine {
 
         var commits: [GitGraphLayout.Commit] = []
         for (order, commit) in graph.commits.enumerated() {
+            let center = CGPoint(x: x(order), y: y(commit.branch))
             commits.append(GitGraphLayout.Commit(
-                center: CGPoint(x: x(order), y: y(commit.branch)),
+                center: center,
                 colorIndex: lane(commit.branch),
                 id: commit.id, label: labels[order],
+                labelCenter: labels[order] == nil ? nil : CGPoint(x: center.x, y: center.y + 16),
                 tag: commit.tag, isMerge: commit.isMerge))
         }
 
@@ -104,6 +106,38 @@ extension DiagramLayoutEngine {
                 edges.append(GitGraphLayout.Edge(from: from, to: corner, colorIndex: color))
                 edges.append(GitGraphLayout.Edge(from: corner, to: to, colorIndex: color))
             }
+        }
+
+        // A branch/merge leg is a vertical edge segment at a commit's own x;
+        // when one occupies the space directly BELOW a labeled dot, the label
+        // would sit on the line. Flip such labels above the rail — but only
+        // when the space above is genuinely free (no tag chip, no vertical leg
+        // rising from an upper lane). If both sides are busy, below wins and
+        // the label shifts right of the leg instead.
+        commits = commits.enumerated().map { order, commit in
+            guard let label = commit.label, let defaultCenter = commit.labelCenter else { return commit }
+            func legOccupies(_ yLo: CGFloat, _ yHi: CGFloat) -> Bool {
+                edges.contains { edge in
+                    abs(edge.from.x - commit.center.x) < 0.5 && abs(edge.to.x - commit.center.x) < 0.5
+                        && min(edge.from.y, edge.to.y) < yHi && max(edge.from.y, edge.to.y) > yLo
+                }
+            }
+            let belowBusy = legOccupies(commit.center.y + dotRadius, commit.center.y + 24)
+            guard belowBusy else { return commit }
+            let aboveBusy = commit.tag != nil
+                || legOccupies(commit.center.y - 24, commit.center.y - dotRadius)
+            let flipped: CGPoint
+            if aboveBusy {
+                // Shift right of the descending leg, still under the rail.
+                let w = measure(label, labelFontSize).width
+                flipped = CGPoint(x: commit.center.x + w / 2 + 10, y: defaultCenter.y)
+            } else {
+                flipped = CGPoint(x: commit.center.x, y: commit.center.y - 16)
+            }
+            return GitGraphLayout.Commit(
+                center: commit.center, colorIndex: commit.colorIndex,
+                id: commit.id, label: label, labelCenter: flipped,
+                tag: commit.tag, isMerge: commit.isMerge)
         }
 
         let laneLabels = graph.branches.enumerated().map { index, name in

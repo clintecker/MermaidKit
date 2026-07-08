@@ -486,6 +486,10 @@ public struct GitGraphLayout: Sendable {
         /// Text drawn under the dot — the author's explicit `id:` only;
         /// auto-generated ids are identity, not content.
         public let label: String?
+        /// Where the label's centre sits. Below the dot by default; layout
+        /// flips it above the rail when a branch/merge leg occupies the space
+        /// underneath (nil when `label` is nil).
+        public let labelCenter: CGPoint?
         public let tag: String?
         public let isMerge: Bool
     }

@@ -43,15 +43,12 @@ extension DiagramScene {
         // linter SEE id-label collisions; they were invisible to it before,
         // which is how a fixed column pitch shipped colliding labels.
         for commit in layout.commits {
-            guard let label = commit.label, !label.isEmpty else { continue }
+            guard let label = commit.label, !label.isEmpty,
+                  let at = commit.labelCenter else { continue }
             let w = DiagramScene.estimatedLabelSize(label).width
             labels.append(DiagramScene.Label(
                 text: label,
-                frame: CGRect(
-                    x: commit.center.x - w / 2,
-                    y: commit.center.y + 16 - 7,
-                    width: w,
-                    height: 14)))
+                frame: CGRect(x: at.x - w / 2, y: at.y - 7, width: w, height: 14)))
         }
         for commit in layout.commits {
             guard let tag = commit.tag, !tag.isEmpty else { continue }
