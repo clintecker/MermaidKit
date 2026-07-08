@@ -87,9 +87,19 @@ extension DiagramLayoutEngine {
         for layer in ordered {
             for id in layer { crossBreadth[id] = horizontal ? (sizes[id]?.height ?? 0) : (sizes[id]?.width ?? 0) }
         }
-        let crossCenter = brandesKoepfX(
+        var crossCenter = brandesKoepfX(
             layers: ordered, segments: segmentEdges, breadth: crossBreadth,
             dummies: dummies, minGap: flowchartNodeGap)
+        // 4b. Straighten near-aligned chains. BK's balancing step averages
+        // four candidate alignments, so a node with an off-centre sibling
+        // subtree lands NEAR its lone parent's centre but not ON it — a
+        // 5-20pt jog in what should be a straight spine, with the edge label
+        // sitting on the kink. Snap degree-1 connections onto their
+        // neighbour's centre wherever layer gaps allow (Gansner's priority
+        // method, gap-clamped).
+        straightenChains(layers: ordered, segments: segmentEdges,
+                         breadth: crossBreadth, minGap: flowchartNodeGap,
+                         center: &crossCenter)
         let placement = placeFlowchartFrames(
             layers: ordered, sizes: sizes, crossCenter: crossCenter, horizontal: horizontal)
 
@@ -780,4 +790,66 @@ extension DiagramLayoutEngine {
         )
     }
 
+}
+
+extension DiagramLayoutEngine {
+    /// Post-placement straightening (Gansner et al. §4.2 "priority method",
+    /// reduced to the degree-1 case): a node whose sole in-segment comes from
+    /// `u` wants `center[v] == center[u]`; a node whose sole out-segment goes
+    /// to `v` wants the same from below. Alternating down and up sweeps snap
+    /// those chains straight, each move clamped so the node keeps `minGap` to
+    /// its layer neighbours — the pass can only realign, never overlap.
+    /// Dummy nodes participate, so long-edge channels straighten too.
+    static func straightenChains(
+        layers: [[String]], segments: [(String, String)],
+        breadth: [String: CGFloat], minGap: CGFloat,
+        center: inout [String: CGFloat]
+    ) {
+        var inSegs: [String: [String]] = [:], outSegs: [String: [String]] = [:]
+        for (from, to) in segments {
+            inSegs[to, default: []].append(from)
+            outSegs[from, default: []].append(to)
+        }
+
+        func snap(_ id: String, in layer: [String], at index: Int, toward target: CGFloat) {
+            let current = center[id] ?? 0
+            guard abs(target - current) > 0.01 else { return }
+            var lo = -CGFloat.greatestFiniteMagnitude
+            var hi = CGFloat.greatestFiniteMagnitude
+            let half = (breadth[id] ?? 0) / 2
+            if index > 0 {
+                let left = layer[index - 1]
+                lo = (center[left] ?? 0) + (breadth[left] ?? 0) / 2 + minGap + half
+            }
+            if index + 1 < layer.count {
+                let right = layer[index + 1]
+                hi = (center[right] ?? 0) - (breadth[right] ?? 0) / 2 - minGap - half
+            }
+            guard lo <= hi else { return }
+            let clamped = min(max(target, lo), hi)
+            // Only move when it strictly improves alignment to the target.
+            if abs(clamped - target) < abs(current - target) { center[id] = clamped }
+        }
+
+        for _ in 0..<3 {
+            // Down sweep: align each single-parent node under that parent.
+            for layer in layers {
+                for (index, id) in layer.enumerated() {
+                    if let parents = inSegs[id], parents.count == 1,
+                       let t = center[parents[0]] {
+                        snap(id, in: layer, at: index, toward: t)
+                    }
+                }
+            }
+            // Up sweep: align each single-child node over that child.
+            for layer in layers.reversed() {
+                for (index, id) in layer.enumerated() {
+                    if let children = outSegs[id], children.count == 1,
+                       let t = center[children[0]] {
+                        snap(id, in: layer, at: index, toward: t)
+                    }
+                }
+            }
+        }
+    }
 }
