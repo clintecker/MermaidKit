@@ -40,16 +40,18 @@ final class DocImageGeneration: XCTestCase {
         try png(hero, dark: false)?.write(to: outDir.appendingPathComponent("hero-light.png"))
         try png(hero, dark: true)?.write(to: outDir.appendingPathComponent("hero-dark.png"))
 
-        // Individual gallery tiles for the grid (montaged by scripts/gen-gallery.sh).
-        let tiles = outDir.appendingPathComponent("tiles")
-        try FileManager.default.createDirectory(at: tiles, withIntermediateDirectories: true)
+        // One standalone image per diagram type, light and dark — first-class
+        // assets for the README gallery page and the website.
+        let types = outDir.appendingPathComponent("types")
+        try FileManager.default.createDirectory(at: types, withIntermediateDirectories: true)
         for url in try FileManager.default.contentsOfDirectory(at: fixtures, includingPropertiesForKeys: nil)
             .filter({ $0.pathExtension == "mmd" }).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
             let source = try String(contentsOf: url, encoding: .utf8)
             let name = url.deletingPathExtension().lastPathComponent
-            try png(source, dark: false, scale: 1.5)?.write(to: tiles.appendingPathComponent("\(name).png"))
+            try png(source, dark: false)?.write(to: types.appendingPathComponent("\(name).png"))
+            try png(source, dark: true)?.write(to: types.appendingPathComponent("\(name)-dark.png"))
         }
-        print("DOCGEN wrote hero + tiles to \(outDir.path)")
+        print("DOCGEN wrote hero + per-type images to \(outDir.path)")
     }
 }
 #endif

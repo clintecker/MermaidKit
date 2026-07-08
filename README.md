@@ -60,7 +60,8 @@ with zero dependencies and machine-checkable layout quality.
 
 ## The full set
 
-![The 23 diagram types](docs/images/gallery.png)
+Every type, rendered by MermaidKit itself, one image per diagram (light and
+dark): **[docs/GALLERY.md](docs/GALLERY.md)**.
 
 ## Supported diagram types — honestly
 
