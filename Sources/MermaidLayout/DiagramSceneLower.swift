@@ -36,6 +36,9 @@ extension DiagramScene {
         case .venn(let d):        return .from(DiagramLayoutEngine.layout(d, measure: measure))
         case .cynefin(let d):     return .from(DiagramLayoutEngine.layout(d, measure: measure))
         case .wardley(let d):     return .from(DiagramLayoutEngine.layout(d, measure: measure))
+        case .ishikawa(let d):    return .from(DiagramLayoutEngine.layout(d, measure: measure))
+        case .eventModeling(let d): return .from(DiagramLayoutEngine.layout(d, measure: measure))
+        case .swimlane(let d):    return .from(DiagramLayoutEngine.layout(d, measure: measure))
         }
     }
 

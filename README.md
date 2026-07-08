@@ -1,7 +1,7 @@
 # MermaidKit
 
 Native [Mermaid](https://mermaid.js.org) diagrams for Apple platforms — no
-JavaScript, no WebView, no dependencies. Parse, lay out, and render **23
+JavaScript, no WebView, no dependencies. Parse, lay out, and render **30
 Mermaid diagram types** in pure Swift and CoreGraphics.
 
 <picture>
@@ -41,12 +41,12 @@ Embedding Mermaid today usually means shipping mermaid.js inside a
 `WKWebView`: a JS runtime per diagram, async round-trips, non-native text,
 and a web process in your memory footprint. MermaidKit renders the same
 source natively and synchronously — every diagram type below renders cold in
-**under 25 ms** on Apple silicon, most in **under 12 ms**, and results are
+**under 36 ms** on Apple silicon, most in **under 12 ms**, and results are
 cached per (source, theme, spacing).
 
 |  | MermaidKit | mermaid.js + WKWebView | [BeautifulMermaid](https://github.com/lukilabs/beautiful-mermaid-swift) |
 |---|---|---|---|
-| Diagram types | **23** | all | 6 |
+| Diagram types | **30** | all | 6 |
 | Runtime | Swift + CoreGraphics | JS engine + web process | Swift (elk-swift layout) |
 | Dependencies | **none** | mermaid.js bundle | elk-swift |
 | Rendering | sync, ~ms, cached | async round-trip | sync + async |
@@ -67,7 +67,7 @@ dark): **[docs/GALLERY.md](docs/GALLERY.md)**.
 
 ## Supported diagram types — honestly
 
-All 23 types parse their **core syntax** — the constructs in the mermaid.js
+All 30 types parse their **core syntax** — the constructs in the mermaid.js
 docs' primary examples, which is what the dense fixtures in
 `Fixtures/diagrams/` exercise. MermaidKit is not a syntax-complete port of
 mermaid.js, and the failure mode is deliberate:
@@ -102,7 +102,10 @@ directives (theming is `DiagramTheme`'s job).
 | journey | `journey` | timeline | `timeline` |
 | kanban | `kanban` | treemap | `treemap-beta` |
 | mindmap | `mindmap` | xychart | `xychart-beta` |
-| zenuml | `zenuml` | | |
+| zenuml | `zenuml` | treeview | `treeView-beta` |
+| venn | `venn-beta` | cynefin | `cynefin-beta` |
+| wardley | `wardley-beta` | ishikawa | `ishikawa-beta` |
+| eventmodeling | `eventmodeling` | swimlane | `swimlane-beta` |
 
 ## Performance
 
@@ -115,18 +118,21 @@ smaller). Measured by `RenderBenchmarks`, which fails CI if any type exceeds
 
 | Diagram | Cold render | Diagram | Cold render |
 |---|---:|---|---:|
-| architecture | 24.7 ms | packet | 3.3 ms |
-| block | 3.8 ms | pie | 2.3 ms |
-| c4 | 9.8 ms | quadrant | 3.8 ms |
-| class | 11.1 ms | radar | 2.0 ms |
-| er | 8.3 ms | requirement | 10.3 ms |
-| flowchart | 11.6 ms | sankey | 10.2 ms |
-| gantt | 3.0 ms | sequence | 7.8 ms |
-| gitgraph | 2.5 ms | state | 10.9 ms |
-| journey | 4.6 ms | timeline | 5.7 ms |
-| kanban | 5.4 ms | treemap | 2.9 ms |
-| mindmap | 7.8 ms | xychart | 1.8 ms |
-| zenuml | 9.5 ms | | |
+| architecture | 15.1 ms | packet | 3.4 ms |
+| block | 3.2 ms | pie | 1.7 ms |
+| c4 | 7.0 ms | quadrant | 3.4 ms |
+| class | 10.1 ms | radar | 2.0 ms |
+| cynefin | 2.3 ms | requirement | 8.9 ms |
+| er | 6.9 ms | sankey | 35.8 ms |
+| eventmodeling | 3.6 ms | sequence | 7.7 ms |
+| flowchart | 9.2 ms | state | 11.7 ms |
+| gantt | 3.0 ms | swimlane | 3.3 ms |
+| gitgraph | 2.2 ms | timeline | 4.3 ms |
+| ishikawa | 1.9 ms | treemap | 2.8 ms |
+| journey | 3.8 ms | treeview | 3.1 ms |
+| kanban | 5.0 ms | venn | 1.5 ms |
+| mindmap | 8.0 ms | wardley | 2.3 ms |
+| zenuml | 6.5 ms | xychart | 1.6 ms |
 
 Rendering is synchronous by design: at these times a first render in a
 SwiftUI `body` is cheaper than a state round-trip, and repeat renders hit the
@@ -145,7 +151,7 @@ description to VoiceOver ("Flowchart with 12 nodes and 14 connections:
 Fenced mermaid block, ..."), `attachmentString` sets the same text on the
 embedded image, and `MermaidRenderer.altText(source:)` hands it to hosts
 directly. Descriptions are generated from the parsed model — type, honest
-counts, leading names — deterministically, for all 23 types.
+counts, leading names — deterministically, for all 30 types.
 
 ## Robustness
 
@@ -183,7 +189,7 @@ labels — and `DiagramLayoutLinter` checks it against geometric invariants of
 good layout (no edge through a box, no edge slicing through bare label text,
 no overlapping nodes, no off-canvas or colliding labels, no marks escaping a
 plot). The linter runs in this
-package's test suite over dense fixtures for all 23 types, so layout
+package's test suite over dense fixtures for all 30 types, so layout
 regressions fail CI as *geometry* ("edge #3 passes through node 'DiagramScene' (165pt inside)"), not as pixel diffs.
 
 The scene IR is also the extension seam: a different backend (SVG, say)

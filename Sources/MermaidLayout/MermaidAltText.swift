@@ -102,6 +102,15 @@ public enum MermaidAltText {
         case .wardley(let d):
             return "Wardley map\(titled(d.title)) with \(count(d.components.count, "component")) and " +
                 "\(count(d.links.count, "dependency", "dependencies")): \(list(d.components.map(\.name)))."
+        case .ishikawa(let d):
+            return "Fishbone diagram for \(quote(d.problem)) with " +
+                "\(count(d.causes.count, "major cause")): \(list(d.causes.map(\.label)))."
+        case .eventModeling(let d):
+            return "Event model with \(count(d.frames.count, "frame")) across " +
+                "\(count(Set(d.frames.map(\.kind)).count, "lane")): \(list(d.frames.map(\.entity)))."
+        case .swimlane(let d):
+            return "Swimlane diagram with \(count(d.nodes.count, "step")) across " +
+                "\(count(d.lanes.count, "lane")): \(list(d.lanes.map(\.label)))."
         case .block(let d):
             return "Block diagram with \(count(d.blocks.count, "block")): " +
                 "\(list(d.blocks.map(\.label)))."

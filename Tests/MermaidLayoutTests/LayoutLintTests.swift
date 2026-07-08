@@ -24,6 +24,7 @@ final class LayoutLintTests: XCTestCase {
         "block", "c4", "gitgraph", "pie", "quadrant", "requirement",
         "sankey", "xychart", "er", "class", "architecture",
         "treeview", "venn", "cynefin", "wardley",
+        "ishikawa", "eventmodeling", "swimlane",
     ]
 
     /// Known layout debt: empty — every fixture lays out with zero occlusion,

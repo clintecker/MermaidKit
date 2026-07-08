@@ -18,7 +18,7 @@ final class AltTextTests: XCTestCase {
             .appendingPathComponent("Fixtures/diagrams")
         let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "mmd" }
-        XCTAssertEqual(files.count, 27)
+        XCTAssertEqual(files.count, 30)
         for file in files {
             let source = try String(contentsOf: file, encoding: .utf8)
             let text = try XCTUnwrap(MermaidAltText.describe(source: source),

@@ -179,6 +179,19 @@ enum DiagramRenderer {
             let layout = DiagramLayoutEngine.layout(d, measure: measure)
             size = layout.size
             draw = { context in Self.draw(layout, theme: theme, in: context) }
+        case .ishikawa(let d):
+            let layout = DiagramLayoutEngine.layout(d, measure: measure)
+            size = layout.size
+            draw = { context in Self.draw(layout, theme: theme, in: context) }
+        case .eventModeling(let d):
+            let layout = DiagramLayoutEngine.layout(d, measure: measure)
+            size = layout.size
+            draw = { context in Self.draw(layout, theme: theme, in: context) }
+        case .swimlane(let d):
+            let layout = DiagramLayoutEngine.layout(d, measure: measure)
+            size = layout.size
+            edgePolylines = layout.edges.map(\.points)
+            draw = { context in Self.draw(layout, theme: theme, in: context) }
         }
         return (size, edgePolylines, draw)
     }

@@ -1,11 +1,11 @@
 # MermaidKit brochure site — design brief
 
 Context package for a design session building the GitHub Pages site.
-Written against MermaidKit v0.3.0. Every fact here was verified against the
+Written against MermaidKit v0.5.0. Every fact here was verified against the
 code; cite them as written and don't embellish.
 
 - Repo: https://github.com/clintecker/MermaidKit
-- Latest release: v0.3.0
+- Latest release: v0.5.0 (all 30 mermaid.js diagram types)
 - Site will live at: https://clintecker.github.io/MermaidKit/
   (GitHub Pages, served from the `docs/` folder on `main` — the finished
   site is an `index.html` placed in `docs/`, referencing images relatively
@@ -15,7 +15,7 @@ code; cite them as written and don't embellish.
 
 MermaidKit renders [Mermaid](https://mermaid.js.org) diagrams natively on
 Apple platforms — pure Swift and CoreGraphics, no JavaScript, no WebView,
-zero dependencies. 23 diagram types, a one-line SwiftUI view, images and
+zero dependencies. 30 diagram types, a one-line SwiftUI view, images and
 attributed-string attachments, themed with a single value. MIT.
 
 ## The three story pillars (build the site around these)
@@ -34,7 +34,7 @@ Second novel thing, and the site can say it with a straight face because
 the images prove it: **every example is the project documenting itself.**
 The class diagram is MermaidKit's real public API. The sankey hero is the
 render pipeline. The gitgraph is the actual release history. The xychart
-plots the real benchmark numbers. The same 23 files are the gallery, the
+plots the real benchmark numbers. The same 30 files are the gallery, the
 lint corpus, and the benchmark suite — the examples cannot drift from what
 the engine does.
 
@@ -63,11 +63,11 @@ shape:
 
 - `MermaidRenderer.image(source:theme:spacing:)` — one call, one image.
   Sync and fast enough to call in a SwiftUI `body` (worst dense fixture
-  ~25 ms cold **including rasterization**, most types under 12 ms, cached
+  ~36 ms cold **including rasterization**, most types under 12 ms, cached
   thereafter); `renderImage(...)` is the async sibling with cancellation.
 - `MermaidRenderer.attachmentString(...)` — a diagram as an
   `NSAttributedString` attachment for text views.
-- `DiagramTheme` — six colors plus a categorical palette re-skins all 23
+- `DiagramTheme` — six colors plus a categorical palette re-skins all 30
   types at once. `DiagramSpacing` — `.compact`/`.regular`/`.comfortable`
   density presets, or exact gaps.
 - When parsing fails, `MermaidParser.diagnose()` explains why, with line
@@ -77,7 +77,7 @@ shape:
 
 Install:
 ```swift
-.package(url: "https://github.com/clintecker/MermaidKit.git", from: "0.3.0")
+.package(url: "https://github.com/clintecker/MermaidKit.git", from: "0.5.0")
 ```
 
 ### 3. Adaptable: built to meet people where they are
@@ -96,7 +96,7 @@ Install:
   line"), the engine gets fixed for everyone, and the flaw's whole class
   becomes a permanent CI check so it can't return. Three gitgraph layout
   upgrades and a new linter invariant shipped this way in one day.
-- **Honest support matrix.** All 23 types parse their core syntax; the
+- **Honest support matrix.** All 30 types parse their core syntax; the
   README says plainly what works, what's ignored, and what's a gap worth
   filing. The site should keep that plainness — it's a feature.
 - Platforms: macOS 14+, iOS 17+, visionOS 1+ (Swift 6, Xcode 16+ to
@@ -110,11 +110,11 @@ never hand-edit. Each exists in light and dark; serve both via `<picture>`
 with `prefers-color-scheme`.
 
 **Hero** (the render pipeline as a sankey, ~2200px wide):
-- https://raw.githubusercontent.com/clintecker/MermaidKit/v0.3.0/docs/images/hero-light.png
-- https://raw.githubusercontent.com/clintecker/MermaidKit/v0.3.0/docs/images/hero-dark.png
+- https://raw.githubusercontent.com/clintecker/MermaidKit/v0.5.0/docs/images/hero-light.png
+- https://raw.githubusercontent.com/clintecker/MermaidKit/v0.5.0/docs/images/hero-dark.png
 
-**Per-type gallery** (23 types × 2 appearances, max 2000px wide). Pattern:
-`https://raw.githubusercontent.com/clintecker/MermaidKit/v0.3.0/docs/images/types/<name>.png`
+**Per-type gallery** (30 types × 2 appearances, max 2000px wide). Pattern:
+`https://raw.githubusercontent.com/clintecker/MermaidKit/v0.5.0/docs/images/types/<name>.png`
 (append `-dark` before `.png` for dark). Names and what each self-portrait
 shows:
 
@@ -127,7 +127,7 @@ shows:
 | er | the scene IR's data model |
 | flowchart | the render decision flow, fallbacks included |
 | gantt | the actual 1.0 release program |
-| gitgraph | the real branch/tag history (v0.1.0 → v0.3.0 era) |
+| gitgraph | the real branch/tag history (the release history) |
 | journey | a developer's first week adopting the library |
 | kanban | the live roadmap board |
 | mindmap | the feature map |
@@ -143,14 +143,21 @@ shows:
 | treemap | the source tree by lines |
 | xychart | the published benchmark numbers with the 25 ms budget line |
 | zenuml | the diagnose-and-fix flow |
+| treeview | this repo's own source tree with inline notes |
+| venn | gallery = lint corpus = benchmarks ("the 30 fixtures") |
+| cynefin | layout strategies sorted by problem class |
+| wardley | the component landscape with evolve arrows toward SVG |
+| ishikawa | "diagram renders wrong" root-cause fishbone |
+| eventmodeling | the render pipeline as an event model |
+| swimlane | parse-to-display flow across module lanes |
 
 In the deployed site these same files are referenced relatively:
 `images/hero-light.png`, `images/types/<name>.png`, etc.
 
 ## Numbers the site may cite (verified)
 
-- 23 diagram types, zero dependencies, zero JavaScript, no WebView.
-- Worst dense fixture ~25 ms cold render including rasterization; most
+- 30 diagram types, zero dependencies, zero JavaScript, no WebView.
+- Worst dense fixture ~36 ms cold render including rasterization; most
   types 2–12 ms; results cached. CI fails any type over 250 ms.
 - Every fixture lint-checked in CI against the geometric invariants above.
 - Adversarial input suite; input caps mirror mermaid.js (50k chars, 500
@@ -174,7 +181,7 @@ In the deployed site these same files are referenced relatively:
 1. **Hero** — pitch line, the sankey hero (theme-aware), the SwiftUI
    snippet, the install line. "No JavaScript. No WebView. No
    dependencies." is the honest hook.
-2. **Gallery** — the 23 self-portraits. This is the killer section; lead
+2. **Gallery** — the 30 self-portraits. This is the killer section; lead
    with class (the API drawing itself).
 3. **It checks its own work** — the geometry-linter story, told simply:
    a lint report line next to the diagram it protects.

@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.5.0
+
+Full mermaid.js type parity: **all 30 documented diagram types render.**
+
+Seven new types, each full-stack (parser + layout + renderer + scene
+lowering + linter coverage + alt-text + PDF + gallery self-portrait):
+
+- `treeView-beta` — indentation hierarchy with folder/file glyphs; accepts
+  pasted `tree` output (box-drawing normalizes to indents).
+- `venn-beta` — 1-3 sets, area-proportional radii, overlap labels pushed
+  into their region's private lens.
+- `cynefin-beta` — the fixed 2x2 + confusion disk; transitions run in the
+  outer corridor past the item stacks.
+- `wardley-beta` — author-coordinate scatter with evolution bands, links,
+  dashed evolve arrows, inertia bars, collision-staggered labels.
+- `ishikawa-beta` — classic fishbone: spine, alternating 60-degree ribs,
+  horizontal twigs (upstream's minimal documented grammar).
+- `eventmodeling` — strict time-by-lane grid with typed color-coded
+  frames and elbow connectors.
+- `swimlane-beta` — flowchart semantics under lane constraints: global
+  columns from network-simplex layering, authored lane bands, cross-lane
+  orthogonal edges.
+
+Linter refinements the new types forced: T-junctions no longer count as
+edge crossings (strict-orientation test), and `mark-escapes-plot` applies
+only to a sole bounding container (lanes/composites are not plots).
+
+Benchmarks re-measured across all 30 (worst: sankey 35.8 ms rasterized —
+its fixture grew and its labels gained chips; still 7x under the CI cap).
+
 ## 0.4.1
 
 - Fix the iOS build under Swift 6.1: `UIImage.accessibilityLabel` is

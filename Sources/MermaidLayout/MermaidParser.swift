@@ -26,6 +26,9 @@ public enum MermaidDiagram: Hashable, Sendable {
     case venn(VennDiagram)
     case cynefin(CynefinDiagram)
     case wardley(WardleyMap)
+    case ishikawa(IshikawaDiagram)
+    case eventModeling(EventModelingDiagram)
+    case swimlane(SwimlaneDiagram)
     case gitGraph(GitGraph)
     case sankey(SankeyDiagram)
     case requirement(RequirementDiagram)
@@ -58,6 +61,9 @@ public enum MermaidDiagram: Hashable, Sendable {
         case .venn: return "venn"
         case .cynefin: return "cynefin"
         case .wardley: return "wardley"
+        case .ishikawa: return "ishikawa"
+        case .eventModeling: return "eventmodeling"
+        case .swimlane: return "swimlane"
         case .gitGraph: return "git graph"
         case .sankey: return "sankey"
         case .requirement: return "requirement"
@@ -156,6 +162,16 @@ public enum MermaidParser {
         }
         if header.hasPrefix("cynefin") {
             return parseCynefin(body: Array(lines.dropFirst())).map { .cynefin($0) }
+        }
+        if header.hasPrefix("ishikawa") {
+            // Indentation is significant, so re-read the raw source.
+            return parseIshikawa(source: source).map { .ishikawa($0) }
+        }
+        if header.hasPrefix("eventmodeling") {
+            return parseEventModeling(body: Array(lines.dropFirst())).map { .eventModeling($0) }
+        }
+        if header.hasPrefix("swimlane") {
+            return parseSwimlane(header: header, body: Array(lines.dropFirst())).map { .swimlane($0) }
         }
         if header.hasPrefix("wardley") {
             return parseWardley(body: Array(lines.dropFirst())).map { .wardley($0) }

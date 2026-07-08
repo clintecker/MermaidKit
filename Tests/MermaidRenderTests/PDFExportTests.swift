@@ -32,7 +32,7 @@ final class PDFExportTests: XCTestCase {
             XCTAssertGreaterThan(box.width, 50, "\(name): degenerate media box")
             count += 1
         }
-        XCTAssertEqual(count, 27, "expected all 27 fixture types to export")
+        XCTAssertEqual(count, 30, "expected all 30 fixture types to export")
     }
 
     func testGarbageReturnsNilLikeTheRasterPath() {

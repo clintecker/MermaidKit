@@ -1,4 +1,4 @@
-# Gallery — all 27 diagram types
+# Gallery — all 30 diagram types
 
 Every image below is rendered by MermaidKit itself from the dense
 fixture in [`Fixtures/diagrams/`](../Fixtures/diagrams) — the same
@@ -193,4 +193,25 @@ follows your GitHub theme; both variants live in
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="images/types/wardley-dark.png">
   <img alt="Wardley map rendered by MermaidKit" src="images/types/wardley.png">
+</picture>
+
+## Ishikawa (Fishbone)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/types/ishikawa-dark.png">
+  <img alt="Ishikawa fishbone diagram rendered by MermaidKit" src="images/types/ishikawa.png">
+</picture>
+
+## Event Modeling
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/types/eventmodeling-dark.png">
+  <img alt="Event modeling diagram rendered by MermaidKit" src="images/types/eventmodeling.png">
+</picture>
+
+## Swimlanes
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/types/swimlane-dark.png">
+  <img alt="Swimlane diagram rendered by MermaidKit" src="images/types/swimlane.png">
 </picture>
