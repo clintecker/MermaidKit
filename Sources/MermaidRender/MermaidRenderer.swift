@@ -56,6 +56,13 @@ public enum MermaidRenderer {
         DiagramRenderer.attachmentString(source: source, theme: theme, spacing: spacing)
     }
 
+    /// A VoiceOver-ready description of the diagram (type, scale, leading
+    /// content) — what ``MermaidView`` reads to assistive technologies.
+    /// Nil when the source doesn't parse.
+    public static func altText(source: String) -> String? {
+        MermaidAltText.describe(source: source)
+    }
+
     /// The diagram as single-page vector PDF data — same layout and drawing
     /// as ``image(source:theme:spacing:)``, but resolution-independent: the
     /// export/print path. Nil when the source doesn't parse.

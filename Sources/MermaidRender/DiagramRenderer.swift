@@ -17,7 +17,13 @@ enum DiagramRenderer {
 
     private final class Entry {
         let image: PlatformImage
-        init(image: PlatformImage) { self.image = image }
+        /// VoiceOver description, attached to the image so accessibility
+        /// survives the cache round-trip.
+        let altText: String?
+        init(image: PlatformImage, altText: String?) {
+            self.image = image
+            self.altText = altText
+        }
     }
 
     /// NSCache is documented thread-safe ("you can add, remove, and query
@@ -221,7 +227,7 @@ enum DiagramRenderer {
                 }
             }
             #endif
-            entry = Entry(image: image)
+            entry = Entry(image: image, altText: MermaidAltText.describe(diagram))
             // Cost = actual backing bytes, not point-size bytes: UIKit
             // rasterizes at screen scale; AppKit's handler-backed NSImage caches
             // a rep per destination scale (2x assumed) on first draw.
@@ -246,6 +252,13 @@ enum DiagramRenderer {
         #else
         let image = entry.image
         #endif
+        if let altText = entry.altText {
+            #if canImport(AppKit)
+            image.accessibilityDescription = altText
+            #else
+            image.accessibilityLabel = altText
+            #endif
+        }
         let attachment = NSTextAttachment()
         attachment.image = image
         attachment.bounds = CGRect(origin: .zero, size: image.size)

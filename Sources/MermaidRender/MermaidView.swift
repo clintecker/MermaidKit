@@ -66,8 +66,10 @@ public struct MermaidView: View {
     }
 
     private var accessibilityDescription: String {
-        guard let diagram = MermaidParser.parse(source) else { return "Diagram" }
-        return "\(diagram.typeName) diagram"
+        // Full content description (type, scale, leading names) — the parse
+        // hits MermaidParser's cache-free path but only runs when
+        // accessibility actually resolves the label.
+        MermaidAltText.describe(source: source) ?? "Diagram"
     }
 }
 
