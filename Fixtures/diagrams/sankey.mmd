@@ -1,26 +1,27 @@
 sankey-beta
 
-Flowchart family,Parser,420
-Sequence family,Parser,260
-Chart family,Parser,310
-Box-diagram family,Parser,290
-Specialty family,Parser,150
-Typo'd headers,Diagnostics,48
-Oversized sources,Diagnostics,12
-Parser,Layout engine,1380
-Parser,Diagnostics,50
-Diagnostics,Source fallback,110
-Layout engine,Scene linter,1380
-Scene linter,Renderer,1320
-Scene linter,Budget alerts,60
-Renderer,Light raster,700
-Renderer,Dark raster,620
-Light raster,Render cache,700
-Dark raster,Render cache,620
-Render cache,MermaidView,860
-Render cache,Attachment strings,300
-Render cache,Direct images,160
-MermaidView,Host screens,860
-Attachment strings,Host documents,300
-Direct images,Host exports,160
-Source fallback,Host screens,110
+Flowchart sources,Parser,480
+Chart sources,Parser,300
+Box-diagram sources,Parser,260
+Sequence sources,Parser,210
+Specialty sources,Parser,90
+Parser,Parsed,1245
+Parser,Rejected,95
+Rejected,Diagnostics,95
+Diagnostics,Source fallback,95
+Parsed,Cache hits,830
+Parsed,Cache misses,415
+Cache misses,Layout engine,415
+Layout engine,Lint clean,400
+Layout engine,Budget alerts,15
+Lint clean,Light raster,240
+Lint clean,Dark raster,160
+Light raster,Fresh renders,240
+Dark raster,Fresh renders,160
+Cache hits,MermaidView,520
+Cache hits,Attachment strings,230
+Cache hits,Direct images,80
+Fresh renders,MermaidView,210
+Fresh renders,Attachment strings,130
+Fresh renders,Direct images,60
+Source fallback,MermaidView,95
