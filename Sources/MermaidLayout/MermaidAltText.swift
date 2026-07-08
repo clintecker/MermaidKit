@@ -87,6 +87,21 @@ public enum MermaidAltText {
         case .architecture(let d):
             return "Architecture diagram with \(count(d.services.count, "service")) in " +
                 "\(count(d.groups.count, "group")): \(list(d.groups.map(\.label)))."
+        case .treeView(let d):
+            let total = countNodes(d.roots)
+            return "Tree view with \(count(total, "entry", "entries")): " +
+                "\(list(d.roots.map(\.label)))."
+        case .venn(let d):
+            return "Venn diagram of \(count(d.sets.count, "set")): " +
+                "\(list(d.sets.map { $0.label ?? $0.id }))" +
+                (d.overlaps.isEmpty ? "" : ", with \(count(d.overlaps.count, "labeled overlap"))") + "."
+        case .cynefin(let d):
+            let total = d.items.values.reduce(0) { $0 + $1.count }
+            return "Cynefin framework diagram with \(count(total, "item")) across " +
+                "\(count(d.items.count, "domain")) and \(count(d.transitions.count, "transition"))."
+        case .wardley(let d):
+            return "Wardley map\(titled(d.title)) with \(count(d.components.count, "component")) and " +
+                "\(count(d.links.count, "dependency", "dependencies")): \(list(d.components.map(\.name)))."
         case .block(let d):
             return "Block diagram with \(count(d.blocks.count, "block")): " +
                 "\(list(d.blocks.map(\.label)))."
@@ -100,6 +115,10 @@ public enum MermaidAltText {
     }
 
     // MARK: - Phrasing helpers
+
+    private static func countNodes(_ nodes: [TreeViewNode]) -> Int {
+        nodes.reduce(0) { $0 + 1 + countNodes($1.children) }
+    }
 
     private static func count(_ n: Int, _ singular: String, _ plural: String? = nil) -> String {
         "\(n) \(n == 1 ? singular : (plural ?? singular + "s"))"

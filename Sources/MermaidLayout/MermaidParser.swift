@@ -22,6 +22,10 @@ public enum MermaidDiagram: Hashable, Sendable {
     case kanban(KanbanBoard)
     case radar(RadarChart)
     case treemap(Treemap)
+    case treeView(TreeViewDiagram)
+    case venn(VennDiagram)
+    case cynefin(CynefinDiagram)
+    case wardley(WardleyMap)
     case gitGraph(GitGraph)
     case sankey(SankeyDiagram)
     case requirement(RequirementDiagram)
@@ -50,6 +54,10 @@ public enum MermaidDiagram: Hashable, Sendable {
         case .kanban: return "kanban"
         case .radar: return "radar chart"
         case .treemap: return "treemap"
+        case .treeView: return "treeView"
+        case .venn: return "venn"
+        case .cynefin: return "cynefin"
+        case .wardley: return "wardley"
         case .gitGraph: return "git graph"
         case .sankey: return "sankey"
         case .requirement: return "requirement"
@@ -138,6 +146,19 @@ public enum MermaidParser {
         }
         if header.hasPrefix("radar") {
             return parseRadar(body: Array(lines.dropFirst())).map { .radar($0) }
+        }
+        if header.hasPrefix("treeView") {
+            // Indentation is significant, so re-read the raw source.
+            return parseTreeView(source: source).map { .treeView($0) }
+        }
+        if header.hasPrefix("venn") {
+            return parseVenn(body: Array(lines.dropFirst())).map { .venn($0) }
+        }
+        if header.hasPrefix("cynefin") {
+            return parseCynefin(body: Array(lines.dropFirst())).map { .cynefin($0) }
+        }
+        if header.hasPrefix("wardley") {
+            return parseWardley(body: Array(lines.dropFirst())).map { .wardley($0) }
         }
         if header.hasPrefix("treemap") {
             // Indentation is significant, so re-read the raw (untrimmed) source.

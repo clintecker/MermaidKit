@@ -31,7 +31,7 @@ extension MermaidParser {
         "flowchart", "graph", "sequenceDiagram", "pie", "stateDiagram-v2",
         "classDiagram", "erDiagram", "gantt", "timeline", "mindmap",
         "journey", "quadrantChart", "packet-beta", "xychart-beta", "kanban",
-        "radar-beta", "treemap-beta", "gitGraph", "sankey-beta",
+        "radar-beta", "treemap-beta", "treeView-beta", "venn-beta", "cynefin-beta", "wardley-beta", "gitGraph", "sankey-beta",
         "requirementDiagram", "zenuml", "C4Context", "architecture-beta",
         "block-beta",
     ]

@@ -293,7 +293,10 @@ public enum DiagramLayoutLinter {
             (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y)
         }
         let o1 = cross(a, b, c), o2 = cross(a, b, d), o3 = cross(c, d, a), o4 = cross(c, d, b)
-        return (o1 > 0) != (o2 > 0) && (o3 > 0) != (o4 > 0)
+        // Strictly opposite orientations on BOTH segments: any zero means an
+        // endpoint touches the other segment (a T-junction — tree guide
+        // stubs meeting their spine), which is a join, not a crossing.
+        return o1 * o2 < 0 && o3 * o4 < 0
     }
 
     /// Length of the portion of segment a→b lying inside rect `r`

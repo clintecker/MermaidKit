@@ -32,6 +32,10 @@ extension DiagramScene {
         case .architecture(let d):return .from(DiagramLayoutEngine.layout(d, measure: measure))
         case .block(let d):       return .from(DiagramLayoutEngine.layout(d, measure: measure))
         case .zenuml(let d):      return .from(DiagramLayoutEngine.layout(d, measure: measure))
+        case .treeView(let d):    return .from(DiagramLayoutEngine.layout(d, measure: measure))
+        case .venn(let d):        return .from(DiagramLayoutEngine.layout(d, measure: measure))
+        case .cynefin(let d):     return .from(DiagramLayoutEngine.layout(d, measure: measure))
+        case .wardley(let d):     return .from(DiagramLayoutEngine.layout(d, measure: measure))
         }
     }
 

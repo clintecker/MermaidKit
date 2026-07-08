@@ -1,4 +1,4 @@
-# Gallery — all 23 diagram types
+# Gallery — all 27 diagram types
 
 Every image below is rendered by MermaidKit itself from the dense
 fixture in [`Fixtures/diagrams/`](../Fixtures/diagrams) — the same
@@ -165,4 +165,32 @@ follows your GitHub theme; both variants live in
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="images/types/zenuml-dark.png">
   <img alt="ZenUML diagram rendered by MermaidKit" src="images/types/zenuml.png">
+</picture>
+
+## Tree View
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/types/treeview-dark.png">
+  <img alt="Tree view diagram rendered by MermaidKit" src="images/types/treeview.png">
+</picture>
+
+## Venn
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/types/venn-dark.png">
+  <img alt="Venn diagram rendered by MermaidKit" src="images/types/venn.png">
+</picture>
+
+## Cynefin
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/types/cynefin-dark.png">
+  <img alt="Cynefin framework diagram rendered by MermaidKit" src="images/types/cynefin.png">
+</picture>
+
+## Wardley Map
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/types/wardley-dark.png">
+  <img alt="Wardley map rendered by MermaidKit" src="images/types/wardley.png">
 </picture>

@@ -162,6 +162,23 @@ enum DiagramRenderer {
             let layout = DiagramLayoutEngine.layout(d, measure: measure)
             size = layout.size
             draw = { context in Self.draw(layout, theme: theme, in: context) }
+        case .treeView(let d):
+            let layout = DiagramLayoutEngine.layout(d, measure: measure)
+            size = layout.size
+            draw = { context in Self.draw(layout, theme: theme, in: context) }
+        case .venn(let d):
+            let layout = DiagramLayoutEngine.layout(d, measure: measure)
+            size = layout.size
+            draw = { context in Self.draw(layout, theme: theme, in: context) }
+        case .cynefin(let d):
+            let layout = DiagramLayoutEngine.layout(d, measure: measure)
+            size = layout.size
+            edgePolylines = layout.transitions.map { [$0.from, $0.to] }
+            draw = { context in Self.draw(layout, theme: theme, in: context) }
+        case .wardley(let d):
+            let layout = DiagramLayoutEngine.layout(d, measure: measure)
+            size = layout.size
+            draw = { context in Self.draw(layout, theme: theme, in: context) }
         }
         return (size, edgePolylines, draw)
     }
