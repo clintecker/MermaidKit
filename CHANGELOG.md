@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased (0.2.0)
+
+ELK-inspired layout upgrades ("what can we learn from the Eclipse Layout
+Kernel" — the answer, implemented):
+
+- Network-simplex layering (ELK/dot's default) replaces longest-path for
+  the layered family: class fixture total edge length -36%, state -32%.
+- Edge labels are layout citizens: multi-layer edges reserve a real channel
+  (widened median dummy) and draw their label exactly there; adjacent-layer
+  labeled edges grow their inter-layer gap. Previously merged label pairs
+  render separated.
+- Fixed-side ports: architecture honors author-declared edge sides
+  (`waf:R --> L:gateway`); Edge.fromSide/toSide are now optional (nil =
+  engine picks the facing side).
+- `DiagramSpacing` — the density knob (`.compact`/`.regular`/
+  `.comfortable`, or custom gaps), threaded through flowchart/class/ER/
+  state/architecture and surfaced on MermaidView/MermaidRenderer; render
+  cache keys include it. Preset safety is tested (compact stays
+  occlusion-free; presets order canvas area).
+
 ## 0.1.1
 
 - Fix iOS build: v0.1.0's trait pinning used a nonexistent

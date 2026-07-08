@@ -28,7 +28,11 @@ extension DiagramLayoutEngine {
     /// routing, and collision-scored edge-label placement. Layers stack
     /// top-down, or left-to-right for an LR/RL chart. Pure geometry — the
     /// renderer only draws.
-    public static func layout(_ chart: Flowchart, measure: DiagramTextMeasurer) -> FlowchartLayout {
+    public static func layout(_ chart: Flowchart, measure: DiagramTextMeasurer,
+                              spacing: DiagramSpacing = .regular) -> FlowchartLayout {
+        let flowchartMargin = spacing.resolvedMargin(base: Self.flowchartMargin)
+        let flowchartLayerGap = spacing.resolvedLayerGap(base: Self.flowchartLayerGap)
+        let flowchartNodeGap = spacing.resolvedNodeGap(base: Self.flowchartNodeGap)
         let horizontal = chart.direction == .leftRight || chart.direction == .rightLeft
 
         let ids = chart.nodes.map(\.id)

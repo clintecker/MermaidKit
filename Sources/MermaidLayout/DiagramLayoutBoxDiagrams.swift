@@ -19,7 +19,8 @@ extension DiagramLayoutEngine {
     /// are flipped for layering only; relations route in their real
     /// direction so markers land on the parent), routed via `layeredRoutes`.
     /// Pure geometry — the renderer only draws.
-    public static func layout(_ diagram: ClassDiagram, measure: DiagramTextMeasurer) -> ClassLayout {
+    public static func layout(_ diagram: ClassDiagram, measure: DiagramTextMeasurer,
+                              spacing: DiagramSpacing = .regular) -> ClassLayout {
         // Layer by the relation graph so hierarchies read top-down: for
         // inheritance/realization the parsed edge points child → parent;
         // flip those so parents sit above their children.
@@ -52,7 +53,9 @@ extension DiagramLayoutEngine {
             sizes: boxSizes,
             layeringEdges: layeringEdges,
             routingEdges: diagram.relations.map { (from: $0.from, to: $0.to) },
-            layerGap: 66, nodeGap: 30, margin: 14,
+            layerGap: spacing.resolvedLayerGap(base: 66),
+            nodeGap: spacing.resolvedNodeGap(base: 30),
+            margin: spacing.resolvedMargin(base: 14),
             edgeLabelSizes: diagram.relations.map { relation in
                 relation.label.flatMap { $0.isEmpty ? nil : measure($0, labelFontSize) }
             }
@@ -85,7 +88,8 @@ extension DiagramLayoutEngine {
     /// layered by relation direction and routed via `layeredRoutes`, with the
     /// canvas grown so route-midpoint relationship labels never clip. Pure
     /// geometry — the renderer only draws.
-    public static func layout(_ diagram: ERDiagram, measure: DiagramTextMeasurer) -> ERLayout {
+    public static func layout(_ diagram: ERDiagram, measure: DiagramTextMeasurer,
+                              spacing: DiagramSpacing = .regular) -> ERLayout {
         var boxSizes: [String: CGSize] = [:]
         for entity in diagram.entities {
             var width = measure(entity.name, nodeFontSize).width + compartmentPadX * 2 + 8
@@ -107,7 +111,9 @@ extension DiagramLayoutEngine {
             sizes: boxSizes,
             layeringEdges: diagram.relations.map { ($0.from, $0.to) },
             routingEdges: diagram.relations.map { (from: $0.from, to: $0.to) },
-            layerGap: 66, nodeGap: 30, margin: 14,
+            layerGap: spacing.resolvedLayerGap(base: 66),
+            nodeGap: spacing.resolvedNodeGap(base: 30),
+            margin: spacing.resolvedMargin(base: 14),
             edgeLabelSizes: diagram.relations.map { relation in
                 relation.label.isEmpty ? nil : measure(relation.label, labelFontSize)
             }
@@ -154,8 +160,9 @@ extension DiagramLayoutEngine {
     /// laid out first and becomes a fixed-size box in its parent's layered
     /// layout) and flattening everything into absolute coordinates. Pure
     /// geometry — the renderer only draws.
-    public static func layout(_ diagram: StateDiagram, measure: DiagramTextMeasurer) -> StateLayout {
-        let result = layoutStateScope(diagram, depth: 0, measure: measure)
+    public static func layout(_ diagram: StateDiagram, measure: DiagramTextMeasurer,
+                              spacing: DiagramSpacing = .regular) -> StateLayout {
+        let result = layoutStateScope(diagram, depth: 0, measure: measure, spacing: spacing)
         return StateLayout(
             size: result.size, nodes: result.nodes,
             containers: result.containers, edges: result.edges
@@ -174,7 +181,8 @@ extension DiagramLayoutEngine {
     /// are offset into the composite's frame, so the whole thing is flattened
     /// into absolute coordinates for the renderer.
     private static func layoutStateScope(
-        _ diagram: StateDiagram, depth: Int, measure: DiagramTextMeasurer
+        _ diagram: StateDiagram, depth: Int, measure: DiagramTextMeasurer,
+        spacing: DiagramSpacing
     ) -> StateScopeResult {
         var sizes: [String: CGSize] = [:]
         var childResults: [String: StateScopeResult] = [:]
@@ -182,7 +190,7 @@ extension DiagramLayoutEngine {
         for node in diagram.nodes {
             switch node.kind {
             case .composite(let sub):
-                let child = layoutStateScope(sub, depth: depth + 1, measure: measure)
+                let child = layoutStateScope(sub, depth: depth + 1, measure: measure, spacing: spacing)
                 childResults[node.id] = child
                 let titleWidth = measure(node.label, nodeFontSize).width + 28
                 let width = max(child.size.width + stateInset * 2, titleWidth, 96)
@@ -207,7 +215,9 @@ extension DiagramLayoutEngine {
             sizes: sizes,
             layeringEdges: diagram.edges.map { ($0.from, $0.to) },
             routingEdges: diagram.edges.map { (from: $0.from, to: $0.to) },
-            layerGap: 54, nodeGap: 26, margin: 6,
+            layerGap: spacing.resolvedLayerGap(base: 54),
+            nodeGap: spacing.resolvedNodeGap(base: 26),
+            margin: spacing.resolvedMargin(base: 6),
             edgeLabelSizes: diagram.edges.map { edge in
                 edge.label.flatMap { $0.isEmpty ? nil : measure($0, labelFontSize) }
             }

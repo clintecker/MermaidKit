@@ -173,8 +173,10 @@ layout. Contributions welcome.
 
 ## API
 
-- `MermaidView(source, theme:)` — SwiftUI drop-in; theme defaults to the
-  environment color scheme.
+- `MermaidView(source, theme:spacing:)` — SwiftUI drop-in; theme defaults
+  to the environment color scheme; `spacing` is the density knob
+  (`.compact` / `.regular` / `.comfortable`, or custom gaps — consulted by
+  flowchart, class, ER, state, and architecture layouts).
 - `DiagramTheme` — 7 colors + a categorical `palette` (node tints, pie
   slices, sankey bands…); override the palette to re-skin all 23 types at
   once. See the Theming article in the DocC docs.

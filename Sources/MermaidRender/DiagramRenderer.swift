@@ -40,10 +40,11 @@ enum DiagramRenderer {
 
     /// A rendered attachment for mermaid source, or nil when the dialect
     /// isn't supported yet (caller keeps the styled-source fallback).
-    static func attachmentString(source: String, theme: DiagramTheme) -> NSAttributedString? {
+    static func attachmentString(source: String, theme: DiagramTheme,
+                                 spacing: DiagramSpacing = .regular) -> NSAttributedString? {
         // Cache first: a hit must not pay a re-parse of up-to-50KB source
         // (MermaidView evaluates this on every SwiftUI body pass).
-        let key = "mermaid|\(theme.fingerprint)|\(source)" as NSString
+        let key = "mermaid|\(theme.fingerprint)|\(spacing.fingerprint)|\(source)" as NSString
         if let cached = cache.object(forKey: key) {
             return attributedString(for: cached)
         }
@@ -63,7 +64,7 @@ enum DiagramRenderer {
             var edgePolylines: [[CGPoint]] = []
             switch diagram {
             case .flowchart(let chart):
-                let layout = DiagramLayoutEngine.layout(chart, measure: measure)
+                let layout = DiagramLayoutEngine.layout(chart, measure: measure, spacing: spacing)
                 size = layout.size
                 edgePolylines = layout.edges.map(\.points)
                 draw = { context in Self.draw(layout, theme: theme, in: context) }
@@ -76,17 +77,17 @@ enum DiagramRenderer {
                 size = layout.size
                 draw = { context in Self.draw(layout, theme: theme, in: context) }
             case .classDiagram(let classDiagram):
-                let layout = DiagramLayoutEngine.layout(classDiagram, measure: measure)
+                let layout = DiagramLayoutEngine.layout(classDiagram, measure: measure, spacing: spacing)
                 size = layout.size
                 edgePolylines = layout.edges.map(\.points)
                 draw = { context in Self.draw(layout, theme: theme, in: context) }
             case .er(let er):
-                let layout = DiagramLayoutEngine.layout(er, measure: measure)
+                let layout = DiagramLayoutEngine.layout(er, measure: measure, spacing: spacing)
                 size = layout.size
                 edgePolylines = layout.edges.map(\.points)
                 draw = { context in Self.draw(layout, theme: theme, in: context) }
             case .state(let state):
-                let layout = DiagramLayoutEngine.layout(state, measure: measure)
+                let layout = DiagramLayoutEngine.layout(state, measure: measure, spacing: spacing)
                 size = layout.size
                 edgePolylines = layout.edges.map(\.points)
                 draw = { context in Self.draw(layout, theme: theme, in: context) }
@@ -153,7 +154,7 @@ enum DiagramRenderer {
                 size = layout.size
                 draw = { context in Self.draw(layout, theme: theme, in: context) }
             case .architecture(let d):
-                let layout = DiagramLayoutEngine.layout(d, measure: measure)
+                let layout = DiagramLayoutEngine.layout(d, measure: measure, spacing: spacing)
                 size = layout.size
                 draw = { context in Self.draw(layout, theme: theme, in: context) }
             case .block(let d):

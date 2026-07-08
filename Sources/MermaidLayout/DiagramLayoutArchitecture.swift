@@ -49,12 +49,13 @@ extension DiagramLayoutEngine {
     /// services form a borderless cluster), and wires routed by an
     /// obstacle-avoiding orthogonal A* so no segment crosses a non-endpoint
     /// box. Pure geometry — the renderer only draws.
-    public static func layout(_ diagram: ArchitectureDiagram, measure: DiagramTextMeasurer) -> ArchitectureLayout {
-        let margin: CGFloat = 16
-        let groupGap: CGFloat = 30
-        let groupPad: CGFloat = 16
+    public static func layout(_ diagram: ArchitectureDiagram, measure: DiagramTextMeasurer,
+                              spacing: DiagramSpacing = .regular) -> ArchitectureLayout {
+        let margin = spacing.resolvedMargin(base: 16)
+        let groupGap = spacing.resolvedNodeGap(base: 30)
+        let groupPad: CGFloat = 16 * spacing.scale
         let headerHeight: CGFloat = 22
-        let serviceGap: CGFloat = 30
+        let serviceGap = spacing.resolvedNodeGap(base: 30)
         let boxH: CGFloat = 54
         let junctionSize: CGFloat = 16
         let maxRowWidth: CGFloat = 780

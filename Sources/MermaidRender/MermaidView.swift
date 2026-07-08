@@ -19,6 +19,7 @@ import MermaidLayout
 public struct MermaidView: View {
     private let source: String
     private let explicitTheme: DiagramTheme?
+    private let spacing: DiagramSpacing
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -26,16 +27,20 @@ public struct MermaidView: View {
     ///   - source: Mermaid source, e.g. `"flowchart TD\n  A --> B"`.
     ///   - theme: Optional fixed theme. Omit to follow the environment's
     ///     light/dark color scheme.
-    public init(_ source: String, theme: DiagramTheme? = nil) {
+    ///   - spacing: Layout density — `.compact`, `.regular`, `.comfortable`,
+    ///     or custom gaps.
+    public init(_ source: String, theme: DiagramTheme? = nil,
+                spacing: DiagramSpacing = .regular) {
         self.source = source
         self.explicitTheme = theme
+        self.spacing = spacing
     }
 
     /// The rendered diagram image (scaled down to fit, never up), or the
     /// monospaced raw-source fallback when the source can't be rendered.
     public var body: some View {
         let theme = explicitTheme ?? DiagramTheme(prefersDark: colorScheme == .dark)
-        if let image = MermaidRenderer.image(source: source, theme: theme) {
+        if let image = MermaidRenderer.image(source: source, theme: theme, spacing: spacing) {
             Image(platformImage: image)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
@@ -73,6 +78,7 @@ extension MermaidView: Equatable {
     nonisolated public static func == (lhs: MermaidView, rhs: MermaidView) -> Bool {
         lhs.source == rhs.source
             && lhs.explicitTheme?.fingerprint == rhs.explicitTheme?.fingerprint
+            && lhs.spacing == rhs.spacing
     }
 }
 

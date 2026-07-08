@@ -13,8 +13,9 @@ public enum MermaidRenderer {
 
     /// Renders Mermaid source to a native image, or nil if the source isn't a
     /// recognized Mermaid diagram. The image auto-sizes to the diagram bounds.
-    public static func image(source: String, theme: DiagramTheme) -> PlatformImage? {
-        guard let attr = attachmentString(source: source, theme: theme),
+    public static func image(source: String, theme: DiagramTheme,
+                             spacing: DiagramSpacing = .regular) -> PlatformImage? {
+        guard let attr = attachmentString(source: source, theme: theme, spacing: spacing),
               attr.length > 0,
               let attachment = attr.attribute(.attachment, at: 0, effectiveRange: nil) as? NSTextAttachment
         else { return nil }
@@ -28,7 +29,8 @@ public enum MermaidRenderer {
     /// NOT an overload of `image`: a same-name async twin silently captures
     /// every call in async contexts, making the cheap sync cache-hit path
     /// unreachable there. Cancelling the calling task cancels the render.
-    public static func renderImage(source: String, theme: DiagramTheme) async -> sending PlatformImage? {
+    public static func renderImage(source: String, theme: DiagramTheme,
+                                   spacing: DiagramSpacing = .regular) async -> sending PlatformImage? {
         // NSImage's Sendable conformance is explicitly unavailable, so the
         // image crosses the task boundary in a transfer box. This is sound:
         // the value is either freshly rendered in this task or a fresh COPY
@@ -38,7 +40,7 @@ public enum MermaidRenderer {
         struct Transfer: @unchecked Sendable { let image: PlatformImage? }
         let task = Task.detached(priority: .userInitiated) { () -> Transfer in
             guard !Task.isCancelled else { return Transfer(image: nil) }
-            return Transfer(image: image(source: source, theme: theme))
+            return Transfer(image: image(source: source, theme: theme, spacing: spacing))
         }
         return await withTaskCancellationHandler {
             await task.value.image
@@ -49,8 +51,9 @@ public enum MermaidRenderer {
 
     /// The diagram as a single-attachment attributed string, for embedding in
     /// a text view (how Quoin's editor consumes it). Nil when not Mermaid.
-    public static func attachmentString(source: String, theme: DiagramTheme) -> NSAttributedString? {
-        DiagramRenderer.attachmentString(source: source, theme: theme)
+    public static func attachmentString(source: String, theme: DiagramTheme,
+                                        spacing: DiagramSpacing = .regular) -> NSAttributedString? {
+        DiagramRenderer.attachmentString(source: source, theme: theme, spacing: spacing)
     }
 
     /// The CoreText measurer the renderer itself uses — pass to
