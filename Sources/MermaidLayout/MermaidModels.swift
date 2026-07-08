@@ -103,6 +103,24 @@ public struct SequenceDiagram: Hashable, Sendable {
         public let id: String
         /// Display text; the `as` alias when declared, else the id.
         public var label: String
+        /// Declared with `actor` — drawn as a stick figure, not a box.
+        public var isActor: Bool = false
+    }
+
+    /// A `Note right of A: ...` / `Note over A,B: ...` annotation, anchored
+    /// between messages.
+    public struct Note: Hashable, Sendable {
+        public enum Position: String, Hashable, Sendable { case leftOf, rightOf, over }
+        public let position: Position
+        /// One participant id (left/right) or one-or-two (over).
+        public let ids: [String]
+        public let text: String
+        /// Number of messages that precede this note (its row anchor).
+        public let afterMessage: Int
+        public init(position: Position, ids: [String], text: String, afterMessage: Int) {
+            self.position = position; self.ids = ids
+            self.text = text; self.afterMessage = afterMessage
+        }
     }
 
     /// One message arrow.
@@ -118,6 +136,8 @@ public struct SequenceDiagram: Hashable, Sendable {
 
     /// Participants in first-appearance order (declared or first messaged).
     public var participants: [Participant]
+    /// Notes, anchored between messages by `afterMessage`.
+    public var notes: [Note] = []
     /// Messages in source order.
     public var messages: [Message]
 }

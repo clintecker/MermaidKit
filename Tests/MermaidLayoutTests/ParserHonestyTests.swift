@@ -237,3 +237,39 @@ final class ParserHonestyTests: XCTestCase {
                       "cherry-pick once vanished from the timeline")
     }
 }
+
+extension ParserHonestyTests {
+    func testNotesSurviveAndInterleave() throws {
+        guard case .sequence(let s)? = MermaidParser.parse("""
+        sequenceDiagram
+            A->>B: first
+            Note over A,B: between the two
+            B->>A: second
+            Note right of A: at the end
+        """) else { return XCTFail() }
+        XCTAssertEqual(s.notes.count, 2, "note text is author content; it must survive")
+        XCTAssertEqual(s.notes[0].afterMessage, 1)
+        XCTAssertEqual(s.notes[1].afterMessage, 2)
+        XCTAssertEqual(s.notes[0].text, "between the two")
+
+        let measure: DiagramTextMeasurer = { t, size in
+            CGSize(width: CGFloat(max(t.count, 1)) * size * 0.6, height: size + 4)
+        }
+        let layout = DiagramLayoutEngine.layout(s, measure: measure)
+        XCTAssertEqual(layout.notes.count, 2)
+        // The over-note's row sits strictly between the two message rows.
+        XCTAssertGreaterThan(layout.notes[0].frame.minY, layout.arrows[0].y)
+        XCTAssertLessThan(layout.notes[0].frame.maxY, layout.arrows[1].y + 1)
+    }
+
+    func testActorDeclarationsFlagTheParticipant() throws {
+        guard case .sequence(let s)? = MermaidParser.parse("""
+        sequenceDiagram
+            actor Alice
+            participant Bob
+            Alice->>Bob: hi
+        """) else { return XCTFail() }
+        XCTAssertEqual(s.participants.first(where: { $0.id == "Alice" })?.isActor, true)
+        XCTAssertEqual(s.participants.first(where: { $0.id == "Bob" })?.isActor, false)
+    }
+}

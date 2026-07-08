@@ -85,9 +85,10 @@ mermaid.js, and the failure mode is deliberate:
   cross/async arrows (`-x`, `-)`), `autonumber`, aliases; gantt directive
   lines (never phantom bars) and `y/M/s` durations; radar positional
   values; packet `+N` relative widths; treemap `:::class`; gitGraph
-  `cherry-pick`; class generics `~T~`; ER attribute keys; state
-  composites, forks, choices. Some still doesn't (sequence fragments and
-  notes, flowchart subgraph boxes, `@{ shape }`). If your diagram parses
+  `cherry-pick`; sequence notes (`Note over A,B:`) and `actor` stick
+  figures; class generics `~T~`; ER attribute keys; state composites,
+  forks, choices. Some still doesn't (sequence fragments/boxes, flowchart
+  subgraph boxes, `@{ shape }`). If your diagram parses
   but drops something you wrote, that's a gap: please
   [open an issue](#reporting-a-diagram-that-renders-wrong) with the source.
 

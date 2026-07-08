@@ -30,9 +30,40 @@ extension DiagramRenderer {
         }
 
         for head in layout.heads {
-            fillStrokeBox(head.frame, radius: 6, fill: theme.accent.withAlphaComponent(0.06), stroke: stroke, in: context)
-            drawText(head.label, center: CGPoint(x: head.frame.midX, y: head.frame.midY),
-                     size: 12, weight: .medium, color: theme.ink, in: context)
+            if head.isActor {
+                // Stick figure above the label: head circle, body, arms, legs.
+                let cx = head.frame.midX
+                let top = head.frame.minY
+                context.setStrokeColor(resolvedCGColor(theme.ink.withAlphaComponent(0.75)))
+                context.setLineWidth(1.4)
+                context.strokeEllipse(in: CGRect(x: cx - 4, y: top, width: 8, height: 8))
+                context.beginPath()
+                context.move(to: CGPoint(x: cx, y: top + 8))
+                context.addLine(to: CGPoint(x: cx, y: top + 17))          // body
+                context.move(to: CGPoint(x: cx - 6, y: top + 11))
+                context.addLine(to: CGPoint(x: cx + 6, y: top + 11))      // arms
+                context.move(to: CGPoint(x: cx, y: top + 17))
+                context.addLine(to: CGPoint(x: cx - 5, y: top + 24))      // legs
+                context.move(to: CGPoint(x: cx, y: top + 17))
+                context.addLine(to: CGPoint(x: cx + 5, y: top + 24))
+                context.strokePath()
+                drawText(head.label, center: CGPoint(x: cx, y: head.frame.maxY + 7),
+                         size: 10.5, weight: .medium, color: theme.ink, in: context)
+            } else {
+                fillStrokeBox(head.frame, radius: 6, fill: theme.accent.withAlphaComponent(0.06), stroke: stroke, in: context)
+                drawText(head.label, center: CGPoint(x: head.frame.midX, y: head.frame.midY),
+                         size: 12, weight: .medium, color: theme.ink, in: context)
+            }
+        }
+
+        // Note boxes: tinted, hairline-bordered, text centered — the classic
+        // sequence-note look.
+        for note in layout.notes {
+            fillStrokeBox(note.frame, radius: 3,
+                          fill: theme.categoricalColor(2).withAlphaComponent(0.18),
+                          stroke: theme.categoricalColor(2), in: context)
+            drawText(note.text, center: CGPoint(x: note.frame.midX, y: note.frame.midY),
+                     size: labelSize, color: theme.ink, in: context)
         }
 
         for arrow in layout.arrows {

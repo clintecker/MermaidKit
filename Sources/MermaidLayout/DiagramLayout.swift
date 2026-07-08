@@ -74,8 +74,20 @@ public struct SequenceLayout: Sendable {
     public struct Head: Sendable {
         public let label: String
         public let frame: CGRect
+        /// Drawn as a stick figure (declared with `actor`) instead of a box.
+        public let isActor: Bool
         /// X of the participant's vertical lifeline (the head's center).
         public var lifelineX: CGFloat { frame.midX }
+        public init(label: String, frame: CGRect, isActor: Bool = false) {
+            self.label = label; self.frame = frame; self.isActor = isActor
+        }
+    }
+
+    /// A note box anchored between message rows.
+    public struct NoteBox: Sendable {
+        public let text: String
+        public let frame: CGRect
+        public init(text: String, frame: CGRect) { self.text = text; self.frame = frame }
     }
 
     /// A message arrow drawn at `y` between two lifelines.
@@ -109,6 +121,8 @@ public struct SequenceLayout: Sendable {
     public let lifelineBottom: CGFloat
     /// Message arrows in source order, top to bottom.
     public let arrows: [Arrow]
+    /// Note boxes, already positioned in their interleaved rows.
+    public var notes: [NoteBox] = []
 }
 
 /// Placed pie chart: a disk of slices with a legend column to its right.

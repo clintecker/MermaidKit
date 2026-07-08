@@ -21,6 +21,10 @@ extension DiagramScene {
             // sit atop are guides, not nodes. Heads contain nothing else.
             nodes: layout.heads.map { head in
                 Node(id: head.label, frame: head.frame, isContainer: false)
+            } + layout.notes.map { note in
+                // Note boxes are opaque rectangles in the message field; the
+                // linter must see them so a crossing arrow gets flagged.
+                Node(id: "note: \(note.text)", frame: note.frame, isContainer: false)
             },
             // One Edge per message arrow, routed along its row. A normal message
             // is the horizontal segment from sender to receiver lifeline. A

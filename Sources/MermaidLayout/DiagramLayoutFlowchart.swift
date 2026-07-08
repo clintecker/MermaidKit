@@ -692,27 +692,66 @@ extension DiagramLayoutEngine {
             let width = columnWidth[i]
             heads.append(SequenceLayout.Head(
                 label: participant.label,
-                frame: CGRect(x: x, y: margin, width: width, height: headHeight)
+                frame: CGRect(x: x, y: margin, width: width, height: headHeight),
+                isActor: participant.isActor
             ))
             x += width + 24
         }
 
         let arrowsTop = margin + headHeight + 18
+        // Notes interleave with messages: each note occupies its own row at
+        // its author-order position (afterMessage = messages already seen).
+        let sortedNotes = diagram.notes.enumerated()
+            .sorted { ($0.element.afterMessage, $0.offset) < ($1.element.afterMessage, $1.offset) }
+            .map(\.element)
+        // Notes with afterMessage <= i precede message i in the row order.
+        func rowOfMessage(_ index: Int) -> Int {
+            index + sortedNotes.filter { $0.afterMessage <= index }.count
+        }
+        func rowOfNote(_ noteIndex: Int) -> Int {
+            sortedNotes[noteIndex].afterMessage + noteIndex
+        }
         var arrows: [SequenceLayout.Arrow] = []
-        for (row, message) in diagram.messages.enumerated() {
+        for (index, message) in diagram.messages.enumerated() {
             guard let a = indexOf[message.from], let b = indexOf[message.to] else { continue }
             let isSelf = a == b
             arrows.append(SequenceLayout.Arrow(
                 fromX: heads[a].lifelineX,
                 toX: isSelf ? heads[a].lifelineX + 34 : heads[b].lifelineX,
-                y: arrowsTop + CGFloat(row) * rowHeight,
+                y: arrowsTop + CGFloat(rowOfMessage(index)) * rowHeight,
                 text: message.text,
                 dashed: message.dashed,
                 isSelfMessage: isSelf
             ))
         }
+        var noteBoxes: [SequenceLayout.NoteBox] = []
+        for (noteIndex, note) in sortedNotes.enumerated() {
+            let ids = note.ids.compactMap { indexOf[$0] }
+            guard !ids.isEmpty else { continue }
+            let y = arrowsTop + CGFloat(rowOfNote(noteIndex)) * rowHeight - rowHeight / 2 + 4
+            let textWidth = measure(note.text, labelFontSize).width
+            let boxHeight = rowHeight - 10
+            var frame: CGRect
+            switch note.position {
+            case .rightOf:
+                let x0 = heads[ids[0]].lifelineX + 12
+                frame = CGRect(x: x0, y: y, width: textWidth + 16, height: boxHeight)
+            case .leftOf:
+                let x1 = heads[ids[0]].lifelineX - 12
+                frame = CGRect(x: x1 - textWidth - 16, y: y, width: textWidth + 16, height: boxHeight)
+            case .over:
+                let lo = heads[ids.min()!].lifelineX
+                let hi = heads[ids.max()!].lifelineX
+                let spanWidth = max(hi - lo + 48, textWidth + 16)
+                frame = CGRect(x: (lo + hi) / 2 - spanWidth / 2, y: y,
+                               width: spanWidth, height: boxHeight)
+            }
+            frame.origin.x = max(frame.origin.x, 2)
+            noteBoxes.append(.init(text: note.text, frame: frame))
+        }
 
-        let bottom = arrowsTop + CGFloat(max(diagram.messages.count, 1)) * rowHeight
+        let totalRows = diagram.messages.count + sortedNotes.count
+        let bottom = arrowsTop + CGFloat(max(totalRows, 1)) * rowHeight
         // Self-message labels sit to the right of the loop; widen the canvas
         // so a self-message on the last lifeline doesn't clip its label.
         var width = x - 24 + margin
@@ -720,11 +759,13 @@ extension DiagramLayoutEngine {
             let labelRight = arrow.toX + 8 + measure(arrow.text, labelFontSize).width
             width = max(width, labelRight + margin)
         }
+        for box in noteBoxes { width = max(width, box.frame.maxX + margin) }
         return SequenceLayout(
             size: CGSize(width: width, height: bottom + margin),
             heads: heads,
             lifelineBottom: bottom,
-            arrows: arrows
+            arrows: arrows,
+            notes: noteBoxes
         )
     }
 

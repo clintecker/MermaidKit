@@ -799,12 +799,14 @@ public enum MermaidParser {
         var order: [String] = []
         var messages: [SequenceDiagram.Message] = []
 
-        func note(_ id: String, label: String? = nil) {
+        var notes: [SequenceDiagram.Note] = []
+        func note(_ id: String, label: String? = nil, isActor: Bool = false) {
             if participants[id] == nil {
-                participants[id] = SequenceDiagram.Participant(id: id, label: label ?? id)
+                participants[id] = SequenceDiagram.Participant(id: id, label: label ?? id, isActor: isActor)
                 order.append(id)
             } else if let label {
-                participants[id] = SequenceDiagram.Participant(id: id, label: label)
+                participants[id] = SequenceDiagram.Participant(
+                    id: id, label: label, isActor: participants[id]?.isActor == true || isActor)
             }
         }
 
@@ -815,21 +817,49 @@ public enum MermaidParser {
                 // Strip only the leading keyword — a global replace once
                 // corrupted labels containing the word "actor ".
                 var declaration = line
+                var isActor = false
                 if declaration.hasPrefix("participant ") { declaration = String(declaration.dropFirst(12)) }
-                else if declaration.hasPrefix("actor ") { declaration = String(declaration.dropFirst(6)) }
+                else if declaration.hasPrefix("actor ") { declaration = String(declaration.dropFirst(6)); isActor = true }
                 if let asRange = declaration.range(of: " as ") {
                     let id = String(declaration[..<asRange.lowerBound]).trimmingCharacters(in: .whitespaces)
                     let label = String(declaration[asRange.upperBound...]).trimmingCharacters(in: .whitespaces)
-                    note(id, label: label)
+                    note(id, label: label, isActor: isActor)
                 } else {
-                    note(declaration.trimmingCharacters(in: .whitespaces))
+                    note(declaration.trimmingCharacters(in: .whitespaces), isActor: isActor)
                 }
                 continue
             }
-            if line.hasPrefix("note") || line.hasPrefix("Note") || line.hasPrefix("loop")
+            // `Note right of A: text` / `Note left of A: text` /
+            // `Note over A,B: text` — author content that used to vanish.
+            if line.lowercased().hasPrefix("note ") {
+                let rest = String(line.dropFirst(5))
+                let lower = rest.lowercased()
+                var position: SequenceDiagram.Note.Position?
+                var idText = ""
+                if lower.hasPrefix("right of ") { position = .rightOf; idText = String(rest.dropFirst(9)) }
+                else if lower.hasPrefix("left of ") { position = .leftOf; idText = String(rest.dropFirst(8)) }
+                else if lower.hasPrefix("over ") { position = .over; idText = String(rest.dropFirst(5)) }
+                if let position, let colon = idText.firstIndex(of: ":") {
+                    let ids = idText[..<colon].split(separator: ",")
+                        .map { $0.trimmingCharacters(in: .whitespaces) }
+                        .filter { !$0.isEmpty }
+                    let text = String(idText[idText.index(after: colon)...]).trimmingCharacters(in: .whitespaces)
+                    if !ids.isEmpty, !text.isEmpty {
+                        ids.forEach { note($0) }
+                        notes.append(.init(position: position, ids: ids, text: text,
+                                           afterMessage: messages.count))
+                        continue
+                    }
+                }
+                continue // malformed note: skip, never a phantom message
+            }
+            if line.hasPrefix("loop")
                 || line.hasPrefix("alt") || line.hasPrefix("else") || line.hasPrefix("end")
-                || line.hasPrefix("activate") || line.hasPrefix("deactivate") {
-                continue // v1: skip annotations
+                || line.hasPrefix("activate") || line.hasPrefix("deactivate")
+                || line.hasPrefix("box") || line.hasPrefix("par") || line.hasPrefix("and")
+                || line.hasPrefix("critical") || line.hasPrefix("option") || line.hasPrefix("break")
+                || line.hasPrefix("rect") || line.hasPrefix("opt") {
+                continue // fragments/boxes: frames not yet drawn (tracked gap)
             }
 
             // Messages. Longest token first so `-->>` never part-matches as
@@ -866,6 +896,7 @@ public enum MermaidParser {
         guard !participants.isEmpty else { return nil }
         return SequenceDiagram(
             participants: order.compactMap { participants[$0] },
+            notes: notes,
             messages: messages
         )
     }

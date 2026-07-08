@@ -1,5 +1,5 @@
 sequenceDiagram
-    participant Host as Host App
+    actor Host as Host App
     participant View as MermaidView
     participant Rend as MermaidRenderer
     participant Cache as RenderCache
@@ -13,6 +13,7 @@ sequenceDiagram
     Rend->>Rend: fingerprint + cache key
     Rend->>Cache: object(forKey:)
     Cache-->>Rend: miss
+    Note over Cache,Parse: keys include source, theme, and spacing
     Rend->>Parse: parse(source)
     Parse-->>Rend: .flowchart(model)
     Rend->>Lay: layout(model, measure, spacing)

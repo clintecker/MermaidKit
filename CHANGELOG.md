@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Sequence diagrams: `Note right of / left of / over` boxes render (author
+  content that previously vanished), interleaved in their author-order
+  rows and visible to the geometry linter; `actor` participants draw as
+  stick figures.
+
 ## 0.6.0
 
 The parser honesty sprint: syntax that used to be silently dropped — or
