@@ -55,15 +55,17 @@ public struct ArchitectureDiagram: Hashable, Sendable {
     /// An orthogonal wire between two service/junction ids in `services`.
     public struct Edge: Hashable, Sendable {
         public let from: String
-        /// Border the wire leaves `from` by (default right).
-        public let fromSide: Side
+        /// Border the wire leaves `from` by. A non-nil side is the author's
+        /// declared port (`waf:R -- ...`) and layout honors it as a fixed-side
+        /// constraint; nil lets the engine pick the side facing the target.
+        public let fromSide: Side?
         public let to: String
-        /// Border the wire enters `to` by (default left).
-        public let toSide: Side
+        /// Border the wire enters `to` by; same fixed-side semantics.
+        public let toSide: Side?
         /// True when the connector carries `<` or `>`.
         public let arrow: Bool
         /// Memberwise initializer.
-        public init(from: String, fromSide: Side, to: String, toSide: Side, arrow: Bool) {
+        public init(from: String, fromSide: Side?, to: String, toSide: Side?, arrow: Bool) {
             self.from = from
             self.fromSide = fromSide
             self.to = to
@@ -170,17 +172,17 @@ extension MermaidParser {
         // Left: id[:side].
         let l = lhs.split(separator: ":", maxSplits: 1).map { String($0).trimmingCharacters(in: .whitespaces) }
         let fromId = l[0]
-        let fromSide = l.count > 1 ? ArchitectureDiagram.Side(rawValue: l[1].uppercased()) ?? .right : .right
+        let fromSide = l.count > 1 ? ArchitectureDiagram.Side(rawValue: l[1].uppercased()) : nil
 
         // Right: [side:]id.
         let r = rhs.split(separator: ":", maxSplits: 1).map { String($0).trimmingCharacters(in: .whitespaces) }
         let toId: String
-        let toSide: ArchitectureDiagram.Side
+        let toSide: ArchitectureDiagram.Side?
         if r.count > 1 {
-            toSide = ArchitectureDiagram.Side(rawValue: r[0].uppercased()) ?? .left
+            toSide = ArchitectureDiagram.Side(rawValue: r[0].uppercased())
             toId = r[1]
         } else {
-            toSide = .left
+            toSide = nil
             toId = r[0]
         }
 

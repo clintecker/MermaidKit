@@ -292,8 +292,13 @@ extension DiagramLayoutEngine {
         var edges: [ArchitectureLayout.Edge] = []
         for edge in diagram.edges {
             guard let fromFrame = serviceFrames[edge.from], let toFrame = serviceFrames[edge.to] else { continue }
-            let fromSide = facingSide(fromFrame, toward: toFrame)
-            let toSide = facingSide(toFrame, toward: fromFrame)
+            // Fixed-side ports (ELK's FIXED_SIDE): an author-declared side is
+            // honored — the A* router treats every box, endpoints included, as
+            // an obstacle, so even an away-facing port routes AROUND its own
+            // box rather than through it. Only undeclared sides fall back to
+            // whichever border faces the other endpoint.
+            let fromSide = edge.fromSide ?? facingSide(fromFrame, toward: toFrame)
+            let toSide = edge.toSide ?? facingSide(toFrame, toward: fromFrame)
             let a = anchor(fromFrame, fromSide)
             let b = anchor(toFrame, toSide)
             let aOut = out(a, fromSide, stub)
