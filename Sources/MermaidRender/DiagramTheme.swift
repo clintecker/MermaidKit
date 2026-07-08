@@ -1,6 +1,7 @@
 #if canImport(AppKit) || canImport(UIKit)
 import Foundation
 import CoreGraphics
+import MermaidLayout
 #if canImport(AppKit)
 import AppKit
 #else
@@ -50,41 +51,62 @@ public struct DiagramTheme: Sendable {
     /// detached task, light vs dark ambient) and collide across appearances.
     public let fingerprint: String
 
-    private static func makeFingerprint(
+    /// The theme's colors as platform-free sRGB values, resolved once at init
+    /// under the same pinned appearance as `fingerprint` (so dynamic platform
+    /// colors land on their `prefersDark` variants). This is the surface a
+    /// platform-free backend (SVG emission, draw-list goldens) consumes; the
+    /// rare platform color that refuses sRGB conversion (pattern/catalog)
+    /// resolves to opaque black — it can't be represented as components.
+    public struct Resolved: Hashable, Sendable {
+        public let ink: DiagramColor
+        public let secondaryText: DiagramColor
+        public let tertiaryText: DiagramColor
+        public let canvas: DiagramColor
+        public let accent: DiagramColor
+        public let hairline: DiagramColor
+        public let palette: [DiagramColor]
+    }
+    /// See ``Resolved``.
+    public let resolved: Resolved
+
+    /// One pinned-appearance pass converts every color; the fingerprint and
+    /// `resolved` are both derived from it so they can never disagree.
+    private static func resolveAll(
         prefersDark: Bool, colors: [PlatformColor]
-    ) -> String {
-        func hex(_ c: PlatformColor) -> String {
+    ) -> (resolved: [DiagramColor], fingerprint: String) {
+        func convert(_ c: PlatformColor) -> (DiagramColor, digest: String) {
             var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
             #if canImport(AppKit)
             guard let converted = c.usingColorSpace(.sRGB) else {
-                // Pattern/catalog colors that refuse sRGB conversion: fall back
-                // to their description rather than fingerprinting as zeros
-                // (which would collide every unconvertible color).
-                return "(\(c.description))"
+                // Pattern/catalog colors that refuse sRGB conversion: digest
+                // by description rather than as zeros (which would collide
+                // every unconvertible color).
+                return (DiagramColor(red: 0, green: 0, blue: 0), "(\(c.description))")
             }
             converted.getRed(&r, green: &g, blue: &b, alpha: &a)
             #else
             guard c.getRed(&r, green: &g, blue: &b, alpha: &a) else {
-                return "(\(c.description))"
+                return (DiagramColor(red: 0, green: 0, blue: 0), "(\(c.description))")
             }
             #endif
-            return String(format: "%02X%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255), Int(a * 255))
+            let color = DiagramColor(red: r, green: g, blue: b, alpha: a)
+            return (color, color.hexString)
         }
-        var digest = ""
+        var pairs: [(DiagramColor, digest: String)] = []
         #if canImport(AppKit)
         let appearance = NSAppearance(named: prefersDark ? .darkAqua : .aqua)
         if let appearance {
             appearance.performAsCurrentDrawingAppearance {
-                digest = colors.map(hex).joined()
+                pairs = colors.map(convert)
             }
         } else {
-            digest = colors.map(hex).joined()
+            pairs = colors.map(convert)
         }
         #else
         let traits = UITraitCollection(userInterfaceStyle: prefersDark ? .dark : .light)
-        digest = colors.map { hex($0.resolvedColor(with: traits)) }.joined()
+        pairs = colors.map { convert($0.resolvedColor(with: traits)) }
         #endif
-        return (prefersDark ? "d" : "l") + digest
+        return (pairs.map(\.0), (prefersDark ? "d" : "l") + pairs.map(\.digest).joined())
     }
 
     /// The palette color for a categorical index (wraps around).
@@ -104,9 +126,15 @@ public struct DiagramTheme: Sendable {
         self.tertiaryTextColor = tertiaryTextColor; self.canvas = canvas
         self.accent = accent; self.hairline = hairline; self.prefersDark = prefersDark
         self.palette = palette
-        self.fingerprint = Self.makeFingerprint(
+        let all = Self.resolveAll(
             prefersDark: prefersDark,
             colors: [ink, secondaryTextColor, tertiaryTextColor, canvas, accent, hairline] + palette)
+        self.fingerprint = all.fingerprint
+        let r = all.resolved
+        self.resolved = Resolved(
+            ink: r[0], secondaryText: r[1], tertiaryText: r[2],
+            canvas: r[3], accent: r[4], hairline: r[5],
+            palette: Array(r.dropFirst(6)))
     }
 
     /// The built-in preset: a near-black (light) or near-white (dark) ink
