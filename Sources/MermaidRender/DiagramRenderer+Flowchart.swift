@@ -35,6 +35,10 @@ extension DiagramRenderer {
                 points[points.count - 1] = CGPoint(x: end.x - dx / len * gap, y: end.y - dy / len * gap)
                 arrows.append((points[points.count - 1], approach))
             }
+            if edge.backArrow, points.count >= 2 {
+                // Bidirectional: a second head at the start, pointing back.
+                arrows.append((points[0], points[1]))
+            }
             if edge.dashed { dashedShafts.append(points) } else { solidShafts.append(points) }
         }
 

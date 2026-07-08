@@ -99,6 +99,11 @@ extension MermaidParser {
             let args = c4Args(inside)
 
             if name.hasPrefix("Rel") || name.hasPrefix("BiRel") {
+                // RelIndex(index, from, to, label, ...) leads with an index
+                // arg; consuming it as `from` minted a relation from a number
+                // to the real source.
+                var args = args
+                if name.hasPrefix("RelIndex") { args = Array(args.dropFirst()) }
                 guard args.count >= 3 else { continue }
                 relations.append(C4Diagram.Relation(
                     from: args[0], to: args[1], label: args[2],

@@ -78,11 +78,17 @@ mermaid.js, and the failure mode is deliberate:
 - **Styling/interaction directives** (`%%{init:}%%`, `classDef`/`class`,
   `style`, `linkStyle`, `click`) → **ignored, not fatal**: the diagram still
   parses and renders with MermaidKit's own theme. Ditto comments (`%%`).
-- **Structural syntax that goes beyond the core** — some of it works
-  (flowchart subgraphs; sequence `loop`/`alt`/`opt`/`Note`/activations;
-  class generics `~T~`; ER attribute keys `PK`/`FK`; state composites,
-  forks, choices, notes), some doesn't. If your diagram parses but drops
-  something you wrote, that's a gap: please
+- **Structural syntax that goes beyond the core** — much of it works:
+  YAML front-matter; flowchart chained edges (`A --> B --> C`), `&`
+  fan-out, inline `-- text -->` labels, bidirectional `<-->`, min-length
+  links, `:::class` tolerance; sequence activation shorthand (`->>+`),
+  cross/async arrows (`-x`, `-)`), `autonumber`, aliases; gantt directive
+  lines (never phantom bars) and `y/M/s` durations; radar positional
+  values; packet `+N` relative widths; treemap `:::class`; gitGraph
+  `cherry-pick`; class generics `~T~`; ER attribute keys; state
+  composites, forks, choices. Some still doesn't (sequence fragments and
+  notes, flowchart subgraph boxes, `@{ shape }`). If your diagram parses
+  but drops something you wrote, that's a gap: please
   [open an issue](#reporting-a-diagram-that-renders-wrong) with the source.
 
 Not supported anywhere: HTML in labels (`<br/>` is treated as text),

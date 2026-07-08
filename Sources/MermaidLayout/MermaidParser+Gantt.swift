@@ -26,6 +26,15 @@ extension MermaidParser {
                 if !sections.contains(currentSection) { sections.append(currentSection) }
                 continue
             }
+            // Directive lines (dateFormat, axisFormat %H:%M, todayMarker,
+            // excludes, tickInterval, click href https://...) often contain
+            // colons; without this guard each became a PHANTOM TASK BAR.
+            let directiveKeywords = ["dateformat", "axisformat", "todaymarker",
+                                     "tickinterval", "excludes", "includes",
+                                     "weekday", "weekend", "click", "inclusiveenddates",
+                                     "topaxis", "displaymode", "acctitle", "accdescr"]
+            let keyword = line.split(separator: " ").first.map { $0.lowercased() } ?? ""
+            if directiveKeywords.contains(keyword) { continue }
             guard let colon = line.firstIndex(of: ":") else { continue } // non-task directive
             let label = String(line[..<colon]).trimmingCharacters(in: .whitespaces)
             let spec = String(line[line.index(after: colon)...])
@@ -53,6 +62,11 @@ extension MermaidParser {
                         dates.append(ordinal)
                     } else if let days = durationInDays(token) {
                         duration = days
+                    } else if token.lowercased().hasPrefix("until ") {
+                        // `until otherTask` ends at another task's start — we
+                        // can't resolve it here, but it must NOT become the
+                        // id; the bar keeps its default duration.
+                        continue
                     } else {
                         id = token   // a bare identifier
                     }
@@ -135,7 +149,16 @@ extension MermaidParser {
         case "w": return min(value * 7, maxDays)
         case "h": return value / 24
         case "m": return value / (24 * 60)   // minutes
-        default: return nil
+        case "y": return min(value * 365, maxDays)
+        case "M": return min(value * 30, maxDays)   // months (mermaid's approximation)
+        case "s": return value / (24 * 3600)
+        default:
+            // `Nms` (two-char unit) — vanishingly small on a day axis but a
+            // valid token; without this it became the task's id.
+            if text.hasSuffix("ms"), let ms = MermaidParser.finiteDouble(text.dropLast(2)), ms >= 0 {
+                return ms / (24 * 3600 * 1000)
+            }
+            return nil
         }
     }
 }

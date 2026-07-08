@@ -53,6 +53,20 @@ extension MermaidParser {
                 let name = tokens[1].split(separator: " ").first.map(String.init) ?? tokens[1]
                 if branches.contains(name) { current = name }
 
+            case "cherry-pick":
+                // `cherry-pick id:"X" [tag:"..."]` re-applies commit X on the
+                // current branch. The commit must appear on the timeline —
+                // skipping the line silently erased it.
+                let picked = field("id", in: line) ?? "?"
+                autoID += 1
+                let id = "cherry-pick \(picked)"
+                commits.append(GitGraph.Commit(
+                    id: id, branch: current,
+                    tag: field("tag", in: line) ?? "cherry-pick: \(picked)",
+                    isMerge: false,
+                    parents: headOfBranch[current].map { [$0] } ?? [],
+                    hasExplicitID: false))
+                headOfBranch[current] = commits.count - 1
             case "merge":
                 guard tokens.count > 1 else { continue }
                 let from = tokens[1].split(separator: " ").first.map(String.init) ?? tokens[1]

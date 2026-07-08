@@ -74,8 +74,18 @@ extension MermaidParser {
         }
 
         for raw in body {
-            let line = raw.trimmingCharacters(in: .whitespaces)
+            var line = raw.trimmingCharacters(in: .whitespaces)
             if line.isEmpty { continue }
+            // Comments and block punctuation are not messages; without these
+            // guards `// comment` fabricated a "//" participant and brace
+            // lines became phantom calls.
+            if line.hasPrefix("//") { continue }
+            if line == "{" || line == "}" || line.hasSuffix("{") && !line.contains("->") && !line.contains(".") { continue }
+            // `x = A.method()` — the assignment target is syntax, not a
+            // participant.
+            if let equals = line.range(of: " = ") {
+                line = String(line[equals.upperBound...]).trimmingCharacters(in: .whitespaces)
+            }
 
             if line.hasPrefix("title ") {
                 title = String(line.dropFirst("title ".count)).trimmingCharacters(in: .whitespaces)

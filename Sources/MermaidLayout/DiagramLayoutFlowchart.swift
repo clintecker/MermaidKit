@@ -179,7 +179,8 @@ extension DiagramLayoutEngine {
             labelRects.append(CGRect(x: best.x - w / 2, y: best.y - h / 2, width: w, height: h))
             result.append(FlowchartLayout.PlacedEdge(
                 start: edge.start, end: edge.end, points: edge.points,
-                label: edge.label, dashed: edge.dashed, hasArrow: edge.hasArrow, labelPoint: best
+                label: edge.label, dashed: edge.dashed, hasArrow: edge.hasArrow,
+                backArrow: edge.backArrow, labelPoint: best
             ))
         }
         return result
@@ -547,13 +548,15 @@ extension DiagramLayoutEngine {
                 let p = CGPoint.zero
                 placedEdges.append(FlowchartLayout.PlacedEdge(
                     start: p, end: p, points: [p, p],
-                    label: edge.label, dashed: edge.dashed, hasArrow: edge.hasArrow))
+                    label: edge.label, dashed: edge.dashed, hasArrow: edge.hasArrow,
+                    backArrow: edge.backArrow))
                 continue
             }
             for p in pts { crossLimit = max(crossLimit, horizontal ? p.y : p.x) }
             placedEdges.append(FlowchartLayout.PlacedEdge(
                 start: pts.first!, end: pts.last!, points: pts,
-                label: edge.label, dashed: edge.dashed, hasArrow: edge.hasArrow))
+                label: edge.label, dashed: edge.dashed, hasArrow: edge.hasArrow,
+                    backArrow: edge.backArrow))
         }
         return (placedEdges, crossLimit)
     }

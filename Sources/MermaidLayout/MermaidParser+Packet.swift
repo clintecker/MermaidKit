@@ -9,6 +9,7 @@ extension MermaidParser {
         var title: String?
         var fields: [PacketDiagram.Field] = []
 
+        var cursor = 0   // next free bit, for the `+N` relative form
         for line in body {
             if line.hasPrefix("title ") {
                 title = String(line.dropFirst("title ".count)).trimmingCharacters(in: .whitespaces)
@@ -29,7 +30,12 @@ extension MermaidParser {
                 Int(text).map { min(max($0, 0), 4096) }
             }
             let start: Int, end: Int
-            if bounds.count == 2, let a = clampedBit(bounds[0]), let b = clampedBit(bounds[1]) {
+            if range.hasPrefix("+"), let width = clampedBit(String(range.dropFirst())), width >= 1 {
+                // `+N: "Label"` (v11.7 relative form) is a WIDTH after the
+                // previous field — Int("+16") == 16 once placed a single bit
+                // at absolute position 16: a confidently wrong bit layout.
+                start = cursor; end = min(cursor + width - 1, 4096)
+            } else if bounds.count == 2, let a = clampedBit(bounds[0]), let b = clampedBit(bounds[1]) {
                 start = min(a, b); end = max(a, b)
             } else if bounds.count == 1, let a = clampedBit(bounds[0]) {
                 start = a; end = a
@@ -37,6 +43,7 @@ extension MermaidParser {
                 continue
             }
             guard start >= 0, !label.isEmpty else { continue }
+            cursor = max(cursor, end + 1)
             fields.append(PacketDiagram.Field(startBit: start, endBit: end, label: label))
         }
 

@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.6.0
+
+The parser honesty sprint: syntax that used to be silently dropped — or
+worse, corrupted into confident phantom content — now parses to what the
+author wrote. Every fix is pinned by a regression test using the exact
+previously-broken form (ParserHonestyTests).
+
+Fabrication/corruption fixes:
+- sequence: `->>+`/`->>-` activation shorthand no longer mints phantom
+  `+Name`/`-Name` lifelines (the docs' first example was affected); the
+  `participant P as an actor guy` alias no longer loses text to a global
+  "actor " strip.
+- gantt: directive lines containing colons (`axisFormat %H:%M`,
+  `todayMarker`, `click ... href`) no longer become phantom task bars;
+  `until` no longer becomes a task id; `y/M/s/ms` duration units parse.
+- radar: positional `{1, 2, 3}` values (the docs' primary form) no longer
+  render every curve flat at the minimum; multiple `axis` lines append;
+  the ceiling grows to the data when `max` is unset.
+- packet: `+N` is a field WIDTH after the previous field, not an absolute
+  single bit — relative layouts were confidently wrong before.
+- treemap: `:::styleClass` no longer destroys leaf values; `classDef`
+  lines are no longer literal tree nodes.
+- zenuml: comments and assignment targets no longer fabricate
+  participants.
+- C4: `RelIndex(i, from, to, ...)` no longer shifts the index into `from`.
+- gitGraph: `cherry-pick` appears on the timeline instead of vanishing.
+
+New flowchart syntax (was silently erased whole-line before):
+- chained edges `A --> B --> C`; `&` fan-out (`A & B --> C & D`, label-safe);
+  inline `-- text -->` labels; min-length links (`---->`); bidirectional
+  `<-->` (new `backArrow` on Edge, drawn at both ends); `--o`/`--x` heads
+  (drawn as plain arrows — honest degradation); edge IDs (`e1@-->`);
+  `:::class` suffixes.
+
+Cross-cutting: YAML front-matter (`---title/config---`) is stripped, so
+every config-bearing doc example now native-renders. Fixtures exercise the
+new syntax with graph-identical rewrites, so the lint corpus proves it.
+
 ## 0.5.0
 
 Full mermaid.js type parity: **all 30 documented diagram types render.**

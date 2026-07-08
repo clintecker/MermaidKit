@@ -17,15 +17,26 @@ extension MermaidParser {
                 continue
             }
             if trimmed.isEmpty || trimmed.hasPrefix("%%") { continue }
+            // Styling statements are not tree nodes; without this a
+            // `classDef urgent fill:#f00` line became a literal node labeled
+            // with the CSS.
+            if trimmed.hasPrefix("classDef ") || trimmed.hasPrefix("class ") { continue }
             let indent = raw.prefix { $0 == " " || $0 == "\t" }.reduce(0) { $0 + ($1 == "\t" ? 2 : 1) }
-            // `"Label": value` (leaf) or `"Label"` (branch).
-            var label = trimmed
+            // `"Label": value` (leaf) or `"Label"` (branch), either optionally
+            // suffixed `:::styleClass` — strip the style BEFORE the value
+            // split, or lastIndex(of: ":") lands inside `:::` and destroys
+            // the value while mangling the label.
+            var content = trimmed
+            if let style = content.range(of: ":::") {
+                content = String(content[..<style.lowerBound]).trimmingCharacters(in: .whitespaces)
+            }
+            var label = content
             var value: Double?
-            if let colon = trimmed.lastIndex(of: ":") {
-                let after = trimmed[trimmed.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+            if let colon = content.lastIndex(of: ":") {
+                let after = content[content.index(after: colon)...].trimmingCharacters(in: .whitespaces)
                 if let v = MermaidParser.finiteDouble(after) {
                     value = v
-                    label = String(trimmed[..<colon])
+                    label = String(content[..<colon])
                 }
             }
             label = label.trimmingCharacters(in: CharacterSet(charactersIn: " \"'"))

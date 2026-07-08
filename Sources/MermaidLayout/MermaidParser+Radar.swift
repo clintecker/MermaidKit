@@ -10,7 +10,7 @@ extension MermaidParser {
     static func parseRadar(body: [String]) -> RadarChart? {
         var title: String?
         var axes: [RadarChart.Axis] = []
-        var rawCurves: [(label: String, byKey: [String: Double])] = []
+        var rawCurves: [(label: String, byKey: [String: Double], positional: [Double])] = []
         var maxValue = 100.0, minValue = 0.0, ticks = 5
 
         /// `KEY["Label"]` or bare `KEY` → (key, label).
@@ -29,7 +29,9 @@ extension MermaidParser {
             if line.hasPrefix("title ") {
                 title = String(line.dropFirst("title ".count)).trimmingCharacters(in: .whitespaces)
             } else if line.hasPrefix("axis ") {
-                axes = splitTopLevel(String(line.dropFirst("axis ".count)), separator: ",").compactMap(axisDef)
+                // APPEND: multiple axis lines are the documented way to wrap
+                // long axis lists; assignment silently kept only the last.
+                axes += splitTopLevel(String(line.dropFirst("axis ".count)), separator: ",").compactMap(axisDef)
             } else if line.hasPrefix("curve ") {
                 let spec = String(line.dropFirst("curve ".count))
                 let label: String
@@ -39,13 +41,22 @@ extension MermaidParser {
                     label = String(spec.prefix { $0 != "{" }).trimmingCharacters(in: .whitespaces)
                 }
                 var byKey: [String: Double] = [:]
+                var positional: [Double] = []
                 if let open = spec.firstIndex(of: "{"), let close = spec.lastIndex(of: "}"), open < close {
                     for pair in spec[spec.index(after: open)..<close].split(separator: ",") {
                         let kv = pair.split(separator: ":", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
-                        if kv.count == 2, let v = MermaidParser.finiteDouble(kv[1]) { byKey[kv[0]] = v }
+                        if kv.count == 2, let v = MermaidParser.finiteDouble(kv[1]) {
+                            byKey[kv[0]] = v
+                        } else if kv.count == 1, let v = MermaidParser.finiteDouble(kv[0]) {
+                            // Positional form `curve a{1, 2, 3}` — the docs'
+                            // primary syntax; values map to axes in order.
+                            // The k:v-only parser zeroed every doc-copied
+                            // chart flat to the minimum.
+                            positional.append(v)
+                        }
                     }
                 }
-                rawCurves.append((label, byKey))
+                rawCurves.append((label, byKey, positional))
             } else if line.hasPrefix("max ") {
                 maxValue = MermaidParser.finiteDouble(line.dropFirst(4).trimmingCharacters(in: .whitespaces)) ?? maxValue
             } else if line.hasPrefix("min ") {
@@ -60,12 +71,20 @@ extension MermaidParser {
         }
 
         guard !axes.isEmpty, !rawCurves.isEmpty else { return nil }
-        // Align each curve's values to the axis order.
+        // Align each curve's values to the axis order; positional values map
+        // to axes by index (short lists pad with the minimum).
         let curves = rawCurves.map { raw in
-            RadarChart.Curve(label: raw.label, values: axes.map { raw.byKey[$0.key] ?? minValue })
+            RadarChart.Curve(label: raw.label, values: axes.enumerated().map { index, axis in
+                raw.byKey[axis.key]
+                    ?? (index < raw.positional.count ? raw.positional[index] : minValue)
+            })
         }
+        // Data above the default ceiling would clip; grow the ceiling to the
+        // data (mermaid does the same when max is unset).
+        let dataMax = curves.flatMap(\.values).max() ?? maxValue
+        let ceiling = max(maxValue, dataMax)
         return RadarChart(title: title, axes: axes, curves: curves,
-                          maxValue: maxValue, minValue: minValue, ticks: max(ticks, 1))
+                          maxValue: ceiling, minValue: minValue, ticks: max(ticks, 1))
     }
 
     /// Splits on `separator` but not inside `[]` or `{}` (so axis labels and

@@ -22,9 +22,5 @@ flowchart TD
         THEME --> RASTER[Rasterize per appearance]
         RASTER --> CACHE[(Render cache)]
     end
-    CACHE --> VIEW[MermaidView]
-    CACHE --> ATTACH[NSAttributedString attachment]
-    CACHE --> IMG([UIImage / NSImage])
-    VIEW --> HOST[Host app]
-    ATTACH --> HOST
-    IMG --> HOST
+    CACHE --> VIEW[MermaidView] & ATTACH[NSAttributedString attachment] & IMG([UIImage / NSImage])
+    VIEW & ATTACH & IMG --> HOST[Host app]

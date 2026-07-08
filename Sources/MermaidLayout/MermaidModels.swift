@@ -49,6 +49,8 @@ public struct Flowchart: Hashable, Sendable {
         public var dashed: Bool
         /// False for open links (`---`, `-.-`).
         public var hasArrow: Bool
+        /// True for bidirectional links (`<-->`): an arrowhead at BOTH ends.
+        public var backArrow: Bool = false
     }
 
     public var direction: Direction

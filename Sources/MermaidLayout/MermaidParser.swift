@@ -99,6 +99,16 @@ public enum MermaidParser {
     /// input (the caller falls back to styled source).
     public static func parse(_ source: String) -> MermaidDiagram? {
         guard source.count <= maxTextSize else { return nil }
+        // YAML front-matter (`---\ntitle: ...\n---`) precedes the header in
+        // doc examples; without stripping it, `---` became the header and
+        // every config-bearing example fell back to styled source.
+        var source = source
+        if source.hasPrefix("---") {
+            let all = source.split(separator: "\n", omittingEmptySubsequences: false)
+            if let close = all.dropFirst().firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == "---" }) {
+                source = all[(close + 1)...].joined(separator: "\n")
+            }
+        }
         let lines = source
             .split(separator: "\n", omittingEmptySubsequences: false)
             .map { $0.trimmingCharacters(in: .whitespaces) }
@@ -234,10 +244,12 @@ public enum MermaidParser {
 
             // Split on edge connectors, keeping the connector kind.
             // Supported: --> , --- , -.-> , ==> , with optional |label|.
-            if let edge = parseEdgeLine(line) {
-                note(edge.fromNode)
-                note(edge.toNode)
-                edges.append(edge.edge)
+            if let parsed = parseEdgeLine(line), !parsed.isEmpty {
+                for edge in parsed {
+                    note(edge.fromNode)
+                    note(edge.toNode)
+                    edges.append(edge.edge)
+                }
                 continue
             }
 
@@ -261,48 +273,119 @@ public enum MermaidParser {
         let edge: Flowchart.Edge
     }
 
-    private static func parseEdgeLine(_ line: String) -> ParsedEdge? {
-        // Find the connector.
+    /// Normalizes edge-syntax variants onto the five canonical connectors so
+    /// one scanner handles them all: inline labels (`-- text -->` becomes
+    /// `-->|text|`), min-length stretches (`---->`), circle/cross heads
+    /// (`--o`/`--x`, drawn as plain arrows — an honest degradation), and edge
+    /// IDs (`e1@-->`), which are animation targets we drop.
+    private static func normalizeEdgeSyntax(_ line: String) -> String {
+        func sub(_ pattern: String, _ template: String, _ s: String) -> String {
+            (try? NSRegularExpression(pattern: pattern))
+                .map { $0.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s),
+                                                   withTemplate: template) } ?? s
+        }
+        var s = line
+        s = sub(#"\s\w+@(?=[-=<])"#, " ", s)                         // edge IDs
+        s = sub(#"--\s+([^-|>][^-]*?)\s+-->"#, "-->|$1|", s)         // -- text -->
+        s = sub(#"-\.\s+([^.|]+?)\s+\.->"#, "-.->|$1|", s)          // -. text .->
+        s = sub(#"==\s+([^=|>][^=]*?)\s+==>"#, "==>|$1|", s)         // == text ==>
+        s = sub(#"o--o"#, "<-->", s)                                  // circle both ends
+        s = sub(#"x--x"#, "<-->", s)                                  // cross both ends
+        s = sub(#"--[ox](\s|$)"#, "-->$1", s)                         // --o / --x heads
+        s = sub(#"-{3,}>"#, "-->", s)                                 // ---->
+        s = sub(#"={3,}>"#, "==>", s)                                 // ====>
+        s = sub(#"-\.{2,}-(?![->])"#, "-.-", s)                       // -..-
+        s = sub(#"(?<![-.>])-{4,}(?![->])"#, "---", s)                 // -----
+        return s
+    }
+
+    /// Splits an endpoint list on `&` at bracket depth 0 only, so labels
+    /// like `A[Tom & Jerry]` stay intact.
+    private static func splitEndpoints(_ text: String) -> [Substring] {
+        var parts: [Substring] = []
+        var depth = 0
+        var start = text.startIndex
+        for i in text.indices {
+            switch text[i] {
+            case "[", "(", "{": depth += 1
+            case "]", ")", "}": depth -= 1
+            case "&" where depth == 0:
+                parts.append(text[start..<i])
+                start = text.index(after: i)
+            default: break
+            }
+        }
+        parts.append(text[start...])
+        return parts
+    }
+
+    /// Parses one line's worth of edges — chained (`A --> B --> C`) and
+    /// fanned (`A & B --> C`) forms yield several. The old single-edge parser
+    /// silently erased any line it couldn't fully tokenize, which killed the
+    /// most common idioms in real flowcharts.
+    private static func parseEdgeLine(_ raw: String) -> [ParsedEdge]? {
+        let line = normalizeEdgeSyntax(raw)
         let connectors: [(token: String, dashed: Bool, arrow: Bool)] = [
             ("-.->", true, true), ("==>", false, true), ("-->", false, true),
             ("-.-", true, false), ("---", false, false),
         ]
-        for connector in connectors {
-            guard let range = line.range(of: connector.token) else { continue }
-            let left = String(line[line.startIndex..<range.lowerBound])
-            var right = String(line[range.upperBound...])
-
-            // Optional |label| immediately after the connector.
-            var label: String?
-            let trimmedRight = right.trimmingCharacters(in: .whitespaces)
-            if trimmedRight.hasPrefix("|"), let close = trimmedRight.dropFirst().firstIndex(of: "|") {
-                label = String(trimmedRight[trimmedRight.index(after: trimmedRight.startIndex)..<close])
-                right = String(trimmedRight[trimmedRight.index(after: close)...])
+        var segments: [String] = []
+        var joins: [(dashed: Bool, arrow: Bool, back: Bool, label: String?)] = []
+        var rest = Substring(line)
+        while true {
+            var best: (range: Range<Substring.Index>, connector: (token: String, dashed: Bool, arrow: Bool))?
+            for connector in connectors {
+                if let r = rest.range(of: connector.token),
+                   best == nil || r.lowerBound < best!.range.lowerBound {
+                    best = (r, connector)
+                }
             }
-
-            guard let fromNode = parseNodeToken(Substring(left)),
-                  let toNode = parseNodeToken(Substring(right))
-            else { return nil }
-
-            return ParsedEdge(
-                fromNode: fromNode,
-                toNode: toNode,
-                edge: Flowchart.Edge(
-                    from: fromNode.id,
-                    to: toNode.id,
-                    label: label,
-                    dashed: connector.dashed,
-                    hasArrow: connector.arrow
-                )
-            )
+            guard let found = best else {
+                segments.append(String(rest))
+                break
+            }
+            var left = String(rest[..<found.range.lowerBound]).trimmingCharacters(in: .whitespaces)
+            var back = false
+            if left.hasSuffix("<") { back = true; left = String(left.dropLast()) }
+            segments.append(left)
+            var after = rest[found.range.upperBound...].drop(while: { $0 == " " })
+            var label: String?
+            if after.hasPrefix("|"), let close = after.dropFirst().firstIndex(of: "|") {
+                label = String(after[after.index(after: after.startIndex)..<close])
+                after = after[after.index(after: close)...]
+            }
+            joins.append((found.connector.dashed, found.connector.arrow, back, label))
+            rest = after
         }
-        return nil
+        guard !joins.isEmpty, segments.count == joins.count + 1 else { return nil }
+
+        var out: [ParsedEdge] = []
+        for (i, join) in joins.enumerated() {
+            let lefts = splitEndpoints(segments[i]).compactMap(parseNodeToken)
+            let rights = splitEndpoints(segments[i + 1]).compactMap(parseNodeToken)
+            guard !lefts.isEmpty, !rights.isEmpty else { return nil }
+            for l in lefts {
+                for r in rights {
+                    out.append(ParsedEdge(
+                        fromNode: l, toNode: r,
+                        edge: Flowchart.Edge(from: l.id, to: r.id, label: join.label,
+                                             dashed: join.dashed, hasArrow: join.arrow,
+                                             backArrow: join.back)))
+                }
+            }
+        }
+        return out
     }
 
     /// Parses `id`, `id[Label]`, `id(Label)`, `id([Label])`, `id{Label}`,
     /// `id((Label))`.
     static func parseNodeToken(_ token: Substring) -> Flowchart.Node? {
-        let trimmed = token.trimmingCharacters(in: .whitespaces)
+        var trimmed = token.trimmingCharacters(in: .whitespaces)
+        // `:::className` binds a style class — styling we ignore; without
+        // this strip the tokenizer rejected the node and the line vanished.
+        if let styleClass = trimmed.range(of: ":::") {
+            trimmed = String(trimmed[..<styleClass.lowerBound]).trimmingCharacters(in: .whitespaces)
+        }
         guard !trimmed.isEmpty else { return nil }
 
         var id = ""
@@ -725,11 +808,15 @@ public enum MermaidParser {
             }
         }
 
+        var autonumber = 0   // 0 = off; >0 = next number to stamp
         for line in body {
+            if line == "autonumber" { autonumber = 1; continue }
             if line.hasPrefix("participant") || line.hasPrefix("actor") {
-                let declaration = line
-                    .replacingOccurrences(of: "participant ", with: "")
-                    .replacingOccurrences(of: "actor ", with: "")
+                // Strip only the leading keyword — a global replace once
+                // corrupted labels containing the word "actor ".
+                var declaration = line
+                if declaration.hasPrefix("participant ") { declaration = String(declaration.dropFirst(12)) }
+                else if declaration.hasPrefix("actor ") { declaration = String(declaration.dropFirst(6)) }
                 if let asRange = declaration.range(of: " as ") {
                     let id = String(declaration[..<asRange.lowerBound]).trimmingCharacters(in: .whitespaces)
                     let label = String(declaration[asRange.upperBound...]).trimmingCharacters(in: .whitespaces)
@@ -745,15 +832,30 @@ public enum MermaidParser {
                 continue // v1: skip annotations
             }
 
-            // Messages: A->>B: text · A-->>B: text · A->B: text · A-->B: text
-            for (token, dashed) in [("-->>", true), ("->>", false), ("-->", true), ("->", false)] {
+            // Messages. Longest token first so `-->>` never part-matches as
+            // `-->`. Cross (`-x`) and async (`-)`) heads parse as their base
+            // arrows — head style is an honest degradation, but the message
+            // and its text survive.
+            for (token, dashed) in [("--)", true), ("-->>", true), ("->>", false),
+                                    ("-->", true), ("--x", true), ("-)", false),
+                                    ("-x", false), ("->", false)] {
                 guard let range = line.range(of: token) else { continue }
-                let from = String(line[..<range.lowerBound]).trimmingCharacters(in: .whitespaces)
+                var from = String(line[..<range.lowerBound]).trimmingCharacters(in: .whitespaces)
                 let remainder = String(line[range.upperBound...])
                 let pieces = remainder.split(separator: ":", maxSplits: 1)
-                let to = pieces.first.map { String($0).trimmingCharacters(in: .whitespaces) } ?? ""
-                let text = pieces.count > 1 ? String(pieces[1]).trimmingCharacters(in: .whitespaces) : ""
+                var to = pieces.first.map { String($0).trimmingCharacters(in: .whitespaces) } ?? ""
+                var text = pieces.count > 1 ? String(pieces[1]).trimmingCharacters(in: .whitespaces) : ""
+                // Activation shorthand: `A->>+B:` / `B->>-A:` — the +/- binds
+                // activation, it is NOT part of the participant name. The old
+                // parser minted phantom "+B"/"-B" lifelines from the docs'
+                // very first example.
+                if to.hasPrefix("+") || to.hasPrefix("-") { to = String(to.dropFirst()).trimmingCharacters(in: .whitespaces) }
+                if from.hasSuffix("+") || from.hasSuffix("-") { from = String(from.dropLast()).trimmingCharacters(in: .whitespaces) }
                 guard !from.isEmpty, !to.isEmpty else { break }
+                if autonumber > 0 {
+                    text = text.isEmpty ? "\(autonumber)." : "\(autonumber). \(text)"
+                    autonumber += 1
+                }
                 note(from)
                 note(to)
                 messages.append(SequenceDiagram.Message(from: from, to: to, text: text, dashed: dashed))

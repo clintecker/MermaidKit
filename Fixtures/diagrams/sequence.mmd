@@ -9,7 +9,7 @@ sequenceDiagram
     participant CG as CoreGraphics
     Host->>View: body evaluation
     View->>View: resolve theme from colorScheme
-    View->>Rend: image(source, theme, spacing)
+    View->>+Rend: image(source, theme, spacing)
     Rend->>Rend: fingerprint + cache key
     Rend->>Cache: object(forKey:)
     Cache-->>Rend: miss
@@ -23,7 +23,7 @@ sequenceDiagram
     Rend->>CG: draw(layout, theme)
     CG-->>Rend: rasterized image
     Rend->>Cache: setObject(cost: bytes)
-    Rend-->>View: PlatformImage
+    Rend-->>-View: PlatformImage
     View-->>Host: fitted Image view
     Host->>View: same source again
     View->>Rend: image(source, theme, spacing)
