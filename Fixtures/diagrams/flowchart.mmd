@@ -1,26 +1,30 @@
 flowchart TD
-    Dev([Developer pushes commit]) --> Hook{Pre-commit hook passes?}
-    Hook -->|no| Reject[/Reject push locally/]
-    Hook -->|yes| PR[Open pull request]
-    PR --> CI{CI pipeline green?}
-    CI -->|lint fails| Lint[Report lint errors]
-    CI -->|tests fail| Tests[Report failing tests]
-    Lint -.-> PR
-    Tests -.-> PR
-    CI -->|all checks pass| Review{Two approvals?}
-    Review -->|changes requested| PR
-    Review -->|approved| Merge[[Squash and merge to main]]
-    Merge --> Build[Build release artifact]
-    Build --> Store[(Artifact registry)]
-    Store --> Stage[Deploy to staging]
-    Stage --> Smoke{Smoke tests pass?}
-    Smoke -->|no| Rollback[Roll back staging]
-    Rollback -.-> Store
-    Smoke -->|yes| Canary[Canary rollout 5 percent]
-    Canary --> Metrics{Error rate under threshold?}
-    Metrics -->|regression detected| Halt[Halt and page on-call]
-    Halt -.->|incident opened| Rollback
-    Metrics -->|healthy| Full[Promote to full production]
-    Full --> Notify[Notify release channel]
-    Notify --> Done((Release complete))
-    Halt -->|postmortem| Retro[/Schedule retrospective/]
+    SRC[Fenced mermaid block] --> CAPS{Within input caps?}
+    CAPS -->|over maxTextSize| FALL[Styled source fallback]
+    CAPS -->|ok| HDR{Header recognized?}
+    HDR -->|no| DIAG[[diagnose: did you mean...]]
+    DIAG --> FALL
+    HDR -->|yes| PARSE(Per-type parser)
+    PARSE --> MODEL[(Typed model)]
+    subgraph LAYOUT [Layout pipeline]
+        LAYER[Network-simplex layering] --> ORDER[Barycenter ordering]
+        ORDER --> PLACE[Brandes-Koepf placement]
+        PLACE --> ROUTE[Orthogonal routing]
+        ROUTE --> RESERVE[Label space reservation]
+    end
+    MODEL --> LAYER
+    RESERVE --> SCENE[/Scene IR/]
+    SCENE --> LINT{Linter clean?}
+    LINT -->|violations in CI| LAYER
+    LINT -->|clean| DRAW(CoreGraphics draw)
+    subgraph RENDER [Render layer]
+        DRAW --> THEME[Apply DiagramTheme]
+        THEME --> RASTER[Rasterize per appearance]
+        RASTER --> CACHE[(Render cache)]
+    end
+    CACHE --> VIEW[MermaidView]
+    CACHE --> ATTACH[NSAttributedString attachment]
+    CACHE --> IMG([UIImage / NSImage])
+    VIEW --> HOST[Host app]
+    ATTACH --> HOST
+    IMG --> HOST

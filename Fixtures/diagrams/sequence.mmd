@@ -1,31 +1,32 @@
 sequenceDiagram
-    actor User as Shopper
-    participant Web as Browser SPA
-    participant GW as API Gateway
-    participant Auth as Auth Service
-    participant Cart as Cart Service
-    participant Pay as Payment Gateway
-    participant Inv as Inventory Service
-    participant DB as Orders Database
-
-    User->>Web: Click "Place order"
-    Web->>GW: POST /checkout (session cookie)
-    GW->>Auth: Validate session token
-    Auth->>Auth: Decode and verify JWT signature
-    Auth-->>GW: 200 principal + granted scopes
-    GW->>Cart: Fetch active cart for user
-    Cart->>DB: SELECT items WHERE cart_id = ?
-    DB-->>Cart: 14 line items returned
-    Cart-->>GW: Cart snapshot with subtotal
-    GW->>Inv: Reserve stock for line items
-    Inv->>Inv: Lock rows and decrement counts
-    Inv-->>GW: Reservation token (5 min TTL)
-    GW->>Pay: Authorize charge for $248.19
-    Pay->>Pay: Run fraud heuristics scoring
-    Pay-->>GW: Authorization approved
-    GW->>DB: INSERT order (status = pending)
-    DB-->>GW: order_id 90871 committed
-    GW->>Inv: Commit stock reservation
-    Inv-->>GW: Stock permanently committed
-    GW-->>Web: 201 Created order 90871
-    Web-->>User: Show confirmation page
+    participant Host as Host App
+    participant View as MermaidView
+    participant Rend as MermaidRenderer
+    participant Cache as RenderCache
+    participant Parse as MermaidParser
+    participant Lay as DiagramLayoutEngine
+    participant Scene as DiagramScene
+    participant CG as CoreGraphics
+    Host->>View: body evaluation
+    View->>View: resolve theme from colorScheme
+    View->>Rend: image(source, theme, spacing)
+    Rend->>Rend: fingerprint + cache key
+    Rend->>Cache: object(forKey:)
+    Cache-->>Rend: miss
+    Rend->>Parse: parse(source)
+    Parse-->>Rend: .flowchart(model)
+    Rend->>Lay: layout(model, measure, spacing)
+    Lay->>Lay: simplex, ordering, placement
+    Lay-->>Rend: FlowchartLayout
+    Rend->>Scene: lower(diagram, measure)
+    Scene-->>Rend: scene for lint parity
+    Rend->>CG: draw(layout, theme)
+    CG-->>Rend: rasterized image
+    Rend->>Cache: setObject(cost: bytes)
+    Rend-->>View: PlatformImage
+    View-->>Host: fitted Image view
+    Host->>View: same source again
+    View->>Rend: image(source, theme, spacing)
+    Rend->>Cache: object(forKey:)
+    Cache-->>Rend: hit (copied image)
+    Rend-->>View: PlatformImage

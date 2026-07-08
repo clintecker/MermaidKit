@@ -1,24 +1,23 @@
 timeline
-    title Native Diagram Engine — Roadmap
-    section Foundations
-        2023 Q3 : Fork cmark-gfm and swift-markdown into the core package
-                : Establish byte-lossless round-trip invariant
-        2023 Q4 : TextKit 2 projection with per-block decoration passes
-                : Syntax reveal via MarkdownSourceStyler
-                : First flowchart layout (layered, cycle-safe)
-    section Diagram Breadth
-        2024 Q1 : Sequence and class diagrams : State machine layout
-        2024 Q2 : ER diagrams with crow's-foot cardinality
-                : Gantt charts with dependency edges
-                : Pie and quadrant charts
-        2024 Q3 : Mindmap, journey, and timeline engines
-                : Radar, kanban, and treemap rendering
-        2024 Q4 : gitGraph with branch swimlanes : Packet byte-field diagrams
-    section Layout Quality
-        2025 Q1 : DiagramScene common IR for all 23 types
-                : Geometry linter — edge occlusion and node overlap
-        2025 Q2 : Label collision and crossing-budget warnings
-                : Regression corpus of pathological diagrams
-    section Beyond macOS
-        2025 Q3 : iOS and iPadOS reader parity : visionOS spatial canvas
-        2026 Q1 : Incremental relayout on edit : Export to SVG and PDF
+    title MermaidKit — Project History
+    section Inside an editor
+        2026 Q1 : Native mermaid rendering begins : Seven diagram types
+        2026 Q2 : All 23 types render natively
+                : Geometry linter replaces eyeballing
+                : Scene IR and SceneDelta diffing
+    section Standalone
+        2026-07-07 : Extracted as its own package
+                   : MermaidView SwiftUI drop-in
+                   : v0.1.0 published with CI
+        2026-07-08 : Two adversarial audit rounds
+                   : Input caps and numeric sanitation
+                   : v0.1.1 fixes the iOS build
+    section ELK era
+        2026-07-08 later : Network-simplex layering
+                         : Labels become layout citizens
+                         : Fixed-side ports and spacing presets
+                         : v0.2.0 ships edit stability
+    section Ahead
+        2026 Q3 : SVG backend over the scene IR
+                : Lower platform floors
+        2026 Q4 : API stability review toward 1.0

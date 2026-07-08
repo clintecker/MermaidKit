@@ -42,8 +42,8 @@ final class StabilityTests: XCTestCase {
     /// depends on the text's size, never its letters.
     func testSameWidthRenameMovesNothing() throws {
         let before = try fixtureSource("class")
-        XCTAssertTrue(before.contains("Cart"), "fixture drifted; update this test's rename pair")
-        let after = before.replacingOccurrences(of: "Cart", with: "Kart")
+        XCTAssertTrue(before.contains("Theme"), "fixture drifted; update this test's rename pair")
+        let after = before.replacingOccurrences(of: "Theme", with: "Thema")
 
         let a = try scene(before)
         let b = try scene(after)
@@ -61,7 +61,8 @@ final class StabilityTests: XCTestCase {
     /// shifts its own layer and the canvas — but a global teleport fails it.
     func testAppendingLeafHasBoundedBlastRadius() throws {
         let before = try fixtureSource("state")
-        let after = before + "\n    Archived --> Purged\n"
+        XCTAssertTrue(before.contains("Cached"), "fixture drifted; update this test's leaf parent")
+        let after = before + "\n    Cached --> Evicted : memory pressure\n"
 
         let a = try scene(before)
         let b = try scene(after)

@@ -36,8 +36,9 @@ MIT.
 
 ## Asset inventory (all paths relative to `docs/`)
 
-- `images/hero-light.png`, `images/hero-dark.png` — the energy-flow sankey,
-  2200×~1180, palette-quantized (~50–65KB each). Current hero image.
+- `images/hero-light.png`, `images/hero-dark.png` — MermaidKit's own render
+  pipeline drawn as a sankey (self-referential, like every fixture),
+  ~2200px wide, palette-quantized. Current hero image.
 - `images/types/<name>.png` + `images/types/<name>-dark.png` — one image
   per diagram type, rendered by MermaidKit itself from the dense fixtures.
   23 types × 2 appearances, max 2000px wide, quantized. The `<name>`s:
@@ -71,7 +72,7 @@ MIT.
   labels); a linter checks invariants of good layout (no edge through a
   box, no overlapping nodes, nothing off-canvas, no series escaping its
   plot). Layout regressions fail CI as geometry ("edge #3 passes through
-  node 'Customer' (165pt inside)"), not pixel diffs. No other Mermaid
+  node 'DiagramScene' (165pt inside)"), not pixel diffs. No other Mermaid
   renderer does this.
 
 ## Code snippets (copy exactly; these compile)

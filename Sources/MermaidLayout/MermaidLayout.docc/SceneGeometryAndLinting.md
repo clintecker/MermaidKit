@@ -52,7 +52,7 @@ let errors = violations.filter { $0.severity == .error }
 
 MermaidKit's own test suite lints a dense fixture for **every** diagram type
 and asserts zero errors — so a layout regression fails CI as a named
-geometric fact ("edge #3 passes through node "Customer" (165pt inside)"),
+geometric fact ("edge #3 passes through node "DiagramScene" (165pt inside)"),
 not as a pixel diff.
 
 ## Diffing layouts

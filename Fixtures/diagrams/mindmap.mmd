@@ -1,37 +1,40 @@
 mindmap
-  root((Markdown Editor Architecture))
-    Core Engine
-      Parsing
-        swift-markdown
-        cmark-gfm bridge
-        AST reconciliation
-      DocumentSession
-        Source of truth is markdown
-        Byte-lossless round-trip
-        Undo and redo coalescing
-      Search and Stats
-        Full-text indexer
-        Reading-time estimator
-    Rendering Pipeline
-      AttributedRenderer projection
-        Block ID tagging
-        BlockDecoration chrome
-      Syntax reveal
-        MarkdownSourceStyler
-        Hidden delimiters stay 1pt
-      Diagram engine
-        Layout geometry
-        DiagramScene linter
-        23 native chart types
-    Platform Layers
-      AppKit macOS editor
-        EditorTextView subclass
-        ReaderCoordinator
-      UIKit iOS reader
-        MarkdownReaderViewIOS
-      Not Catalyst-safe yet
-    Testing and CI
-      PerformanceTests budgets
-      TortureTests pathological inputs
-      Screenshot automation
-      swift test on macOS runner
+  root((MermaidKit))
+    Parsing
+      23 dialect headers
+      finiteDouble sanitation
+        NaN and inf rejected
+        magnitudes clamped
+      Input caps
+        maxTextSize 50k
+        maxEdges 500
+      diagnose with did-you-mean
+    Layout
+      Network-simplex layering
+      Barycenter ordering
+        declaration-order ties
+      Brandes-Koepf placement
+      Label space reservation
+        median dummy channels
+        grown layer gaps
+      Fixed-side ports
+      DiagramSpacing presets
+    Scene IR
+      Codable geometry
+      Linter invariants
+        no edge through box
+        nothing off canvas
+        marks stay in plot
+      SceneDelta diffing
+    Rendering
+      CoreGraphics drawing
+      DiagramTheme
+        categorical palette
+        appearance pinning
+      Bounded render cache
+      MermaidView
+    Quality
+      Adversarial suite
+      Rasterized benchmarks
+      Stability tests
+      Per-fixture budgets

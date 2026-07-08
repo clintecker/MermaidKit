@@ -1,42 +1,39 @@
 architecture-beta
-group public(cloud)[Public Edge]
-group services(server)[Application Services]
-group data(database)[Data Platform]
-group observ(logging)[Observability]
+    group parsing(server)[Parsing]
+    group layout(server)[Layout Engine]
+    group render(cloud)[Render Layer]
+    group quality(logging)[Quality Gates]
 
-service dns(internet)[Route 53 DNS] in public
-service cdn(disk)[CloudFront CDN] in public
-service waf(server)[Web Application Firewall] in public
+    service parser(server)[Per-type parsers] in parsing
+    service diagnostics(server)[diagnose] in parsing
+    service models(database)[Typed models] in parsing
+    service layering(server)[Network simplex] in layout
+    service ordering(server)[Barycenter order] in layout
+    service placement(server)[Brandes-Koepf] in layout
+    service routing(server)[Edge routing] in layout
+    service scene(database)[Scene IR] in layout
+    service theme(disk)[DiagramTheme] in render
+    service renderer(server)[CoreGraphics draw] in render
+    service cache(database)[Render cache] in render
+    service view(server)[MermaidView] in render
+    service linter(logging)[Layout linter] in quality
+    service budgets(logging)[Metric budgets] in quality
+    service fuzz(logging)[Adversarial suite] in quality
+    junction gatecheck
 
-service gateway(server)[API Gateway] in services
-service auth(server)[Auth Service] in services
-service orders(server)[Orders Service] in services
-service billing(server)[Billing Service] in services
-service notify(server)[Notification Worker] in services
-
-service primary(database)[Postgres Primary] in data
-service replica(database)[Postgres Read Replica] in data
-service cache(disk)[Redis Session Cache] in data
-service queue(server)[Kafka Event Broker] in data
-
-service metrics(server)[Prometheus] in observ
-service logs(logging)[Loki Log Store] in observ
-
-junction fanout in services
-
-dns:B --> T:cdn
-cdn:B --> T:waf
-waf:R --> L:gateway
-gateway:B --> T:auth
-gateway:B --> T:orders
-gateway:R --> L:fanout
-fanout:B --> T:billing
-fanout:B --> T:notify
-auth:B --> T:cache
-orders:B --> T:primary
-billing:B --> T:primary
-primary:R --> L:replica
-notify:B --> T:queue
-orders:R --> L:queue
-metrics:L <-- R:gateway
-logs:L <-- R:notify
+    parser:B --> T:models
+    parser:R --> L:diagnostics
+    models:R --> L:layering
+    layering:B --> T:ordering
+    ordering:B --> T:placement
+    placement:R --> L:routing
+    routing:B --> T:scene
+    scene:R --> L:renderer
+    theme:B --> T:renderer
+    renderer:B --> T:cache
+    cache:R --> L:view
+    scene:B --> T:gatecheck
+    gatecheck:B --> T:linter
+    linter:R --> L:budgets
+    fuzz:T --> B:parser
+    budgets:T <-- R:renderer

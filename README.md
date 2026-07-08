@@ -6,7 +6,7 @@ Mermaid diagram types** in pure Swift and CoreGraphics.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.png">
-  <img alt="An energy-flow sankey diagram rendered natively by MermaidKit" src="docs/images/hero-light.png">
+  <img alt="MermaidKit's own render pipeline as a sankey diagram, rendered by MermaidKit" src="docs/images/hero-light.png">
 </picture>
 
 ```swift
@@ -174,7 +174,7 @@ labels — and `DiagramLayoutLinter` checks it against geometric invariants of
 good layout (no edge through a box, no overlapping nodes, no off-canvas or
 colliding labels, no marks escaping a plot). The linter runs in this
 package's test suite over dense fixtures for all 23 types, so layout
-regressions fail CI as *geometry*, not as pixel diffs.
+regressions fail CI as *geometry* ("edge #3 passes through node 'DiagramScene' (165pt inside)"), not as pixel diffs.
 
 The scene IR is also the extension seam: a different backend (SVG, say)
 would consume `DiagramScene`/the layout structs without touching parsing or

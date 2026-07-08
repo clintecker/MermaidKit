@@ -1,39 +1,32 @@
 C4Container
-    title Container diagram for the Internet Banking Platform
+    title Container diagram — a host app embedding MermaidKit
 
-    Person(customer, "Personal Banking Customer", "A retail customer of the bank with one or more personal accounts")
-    Person_Ext(support, "Support Agent", "Staffs the customer contact centre and resolves disputes")
+    Person(author, "Document Author", "Writes markdown with fenced mermaid blocks")
+    Person_Ext(reader, "Reader", "Views rendered documents on any device")
 
-    System_Boundary(banking, "Internet Banking Platform") {
-        Container(spa, "Single-Page Application", "TypeScript, React", "Delivers all banking features to the customer's web browser")
-        Container(mobile, "Mobile App", "Kotlin Multiplatform", "Delivers a subset of banking features to customers on the go")
-        Container(web, "Web Application", "Java, Spring MVC", "Serves static content and the single-page application shell")
-        Container(api, "API Application", "Java, Spring Boot", "Provides banking functionality over a secure JSON/HTTPS API")
-        ContainerDb(db, "Database", "PostgreSQL", "Stores user profiles, account balances, and audited transactions")
-        ContainerDb(cache, "Session Cache", "Redis", "Holds ephemeral session tokens and rate-limiting counters")
-        Container(queue, "Event Bus", "Apache Kafka", "Streams domain events to downstream analytics and fraud services")
-        Container(fraud, "Fraud Detection Worker", "Python, scikit-learn", "Scores transactions for fraud risk in near real time")
+    System_Boundary(host, "Host App") {
+        Container(editor, "Editor UI", "SwiftUI + TextKit", "Documents with live inline previews")
+        Container(mview, "MermaidView", "SwiftUI", "Drop-in diagram view following the color scheme")
+        Container(attach, "Attachment pipeline", "NSAttributedString", "Inline diagrams inside rich text")
     }
 
-    System_Ext(mainframe, "Mainframe Banking System", "The core banking system of record for accounts and ledgers")
-    System_Ext(email, "E-mail System", "The corporate Microsoft Exchange e-mail system")
-    System_Ext(sms, "SMS Gateway", "Third-party provider used for one-time passcodes")
+    System_Boundary(kit, "MermaidKit") {
+        Container(mrender, "MermaidRender", "Swift + CoreGraphics", "Draws 23 diagram types natively")
+        Container(mlayout, "MermaidLayout", "Swift, platform-free", "Parse, layout, scene IR, linter")
+        ContainerDb(rcache, "Render cache", "NSCache, 64 MB", "Images keyed by source, theme, spacing")
+    }
 
-    Rel(customer, spa, "Views balances and makes payments using", "HTTPS")
-    Rel(customer, mobile, "Views balances and makes payments using")
-    Rel(support, api, "Looks up customer records using", "HTTPS")
+    System_Ext(spm, "Swift Package Manager", "Resolves the package from GitHub")
+    System_Ext(ci, "GitHub Actions", "macOS tests plus iOS compile checks")
 
-    Rel(spa, web, "Downloads the SPA bundle from", "HTTPS")
-    Rel(spa, api, "Makes API calls to", "JSON/HTTPS")
-    Rel(mobile, api, "Makes API calls to", "JSON/HTTPS")
-
-    Rel(api, db, "Reads from and writes to", "JDBC/TLS")
-    Rel(api, cache, "Reads and writes session tokens", "RESP/TLS")
-    Rel(api, mainframe, "Makes API calls to", "XML/HTTPS")
-    Rel(api, queue, "Publishes transaction events to", "Kafka protocol")
-    Rel(api, email, "Sends account notifications using", "SMTP")
-    Rel(api, sms, "Sends one-time passcodes using", "REST")
-
-    Rel(queue, fraud, "Delivers transaction events to", "Kafka protocol")
-    Rel(fraud, db, "Writes fraud scores to", "JDBC/TLS")
-    Rel(fraud, mainframe, "Requests account history from", "XML/HTTPS")
+    Rel(author, editor, "Writes diagrams in", "markdown")
+    Rel(reader, editor, "Reads documents in")
+    Rel(editor, mview, "Embeds")
+    Rel(editor, attach, "Renders blocks through")
+    Rel(mview, mrender, "image(source, theme, spacing)", "Swift API")
+    Rel(attach, mrender, "attachmentString(...)", "Swift API")
+    Rel(mrender, mlayout, "Lays out via", "DiagramTextMeasurer")
+    Rel(mrender, rcache, "Reads and writes", "fingerprint keys")
+    Rel(editor, spm, "Depends on MermaidKit through", "SPM/HTTPS")
+    Rel(ci, mlayout, "Lints every fixture in", "swift test")
+    Rel(ci, mrender, "Benchmarks rasterized renders of", "swift test")

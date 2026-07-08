@@ -1,40 +1,35 @@
 stateDiagram-v2
-    direction TB
-    [*] --> Draft
-    state "Draft (author editing)" as Draft
-    Draft --> Submitted : submit for review
-    Submitted --> reviewFork
-
-    state reviewFork <<fork>>
-    reviewFork --> LegalReview
-    reviewFork --> TechReview
-    reviewFork --> EditorialReview
-
-    state "In Review" as ReviewGroup {
-        LegalReview --> reviewJoin : approved
-        TechReview --> reviewJoin : approved
-        EditorialReview --> reviewJoin : approved
-        LegalReview --> Draft : legal rejection
-        TechReview --> Draft : needs rework
+    [*] --> SourceEdited
+    SourceEdited --> Parsing : fenced block changed
+    state Parsing {
+        [*] --> HeaderCheck
+        HeaderCheck --> BodyParse : dialect known
+        HeaderCheck --> Diagnosing : unknown header
+        Diagnosing --> [*] : did-you-mean emitted
+        BodyParse --> [*] : model built
     }
-    state reviewJoin <<join>>
-
-    reviewJoin --> gate
-    state gate <<choice>>
-    gate --> Approved : all sign-offs present
-    gate --> Draft : revisions requested
-
-    state "Publishing Pipeline" as Approved {
-        [*] --> Staging
-        Staging --> Building : trigger build
-        Building --> Staging : build failed
-        Building --> Canary : artifacts ready
-        Canary --> RollingOut : metrics healthy
-        Canary --> Staging : canary regressed
-        RollingOut --> Live : 100% traffic
-        Live --> [*]
+    Parsing --> RouteChoice
+    state RouteChoice <<choice>>
+    RouteChoice --> LayoutPipeline : parse ok
+    RouteChoice --> SourceFallback : nil parse
+    state LayoutPipeline {
+        [*] --> Layering
+        Layering --> Ordering : network simplex done
+        Ordering --> Placement : crossings minimized
+        Placement --> Routing : coordinates assigned
+        Routing --> [*] : labels reserved
     }
-
-    Approved --> Archived : superseded
-    Approved --> Draft : hotfix reopen
-    Archived --> [*]
+    LayoutPipeline --> AppearanceFork
+    state AppearanceFork <<fork>>
+    AppearanceFork --> LightRaster
+    AppearanceFork --> DarkRaster
+    state RasterJoin <<join>>
+    LightRaster --> RasterJoin
+    DarkRaster --> RasterJoin
+    RasterJoin --> Cached : keyed by fingerprint
+    Cached --> Displayed : cache hit
+    Displayed --> Cached : body re-evaluated
+    Cached --> Invalidated : theme changed
+    Invalidated --> Parsing : re-render
+    SourceFallback --> Displayed : monospaced source
+    Displayed --> [*]
