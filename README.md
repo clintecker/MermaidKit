@@ -138,6 +138,15 @@ numeric fields are clamped at parse (durations, bit ranges, tick counts).
 
 Swift 6 language mode, zero concurrency warnings.
 
+## Accessibility
+
+Every diagram describes itself: `MermaidView` exposes a full content
+description to VoiceOver ("Flowchart with 12 nodes and 14 connections:
+Fenced mermaid block, ..."), `attachmentString` sets the same text on the
+embedded image, and `MermaidRenderer.altText(source:)` hands it to hosts
+directly. Descriptions are generated from the parsed model — type, honest
+counts, leading names — deterministically, for all 23 types.
+
 ## Robustness
 
 The parser and layout engines never crash on hostile input — empty/garbage
@@ -196,6 +205,10 @@ layout. Contributions welcome.
   so the cheap sync cache-hit path stays reachable from async contexts).
 - `MermaidRenderer.attachmentString(source:theme:spacing:)` — the diagram
   as a single-attachment `NSAttributedString` for embedding in text views.
+- `MermaidRenderer.pdfData(source:theme:spacing:)` — single-page vector
+  PDF from the same layout and draw code; the export/print path.
+- `MermaidRenderer.altText(source:)` — a VoiceOver-ready description of
+  the diagram's content (see Accessibility below).
 - `MermaidRenderer.textMeasurer` — the renderer's own CoreText measurer;
   pass it to `DiagramLayoutEngine.layout` / `DiagramScene.lower` when you
   want layout or lint geometry to match the render exactly.

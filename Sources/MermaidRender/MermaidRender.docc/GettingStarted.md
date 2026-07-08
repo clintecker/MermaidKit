@@ -36,6 +36,11 @@ a narrower container — never up. If the source isn't recognized Mermaid, it
 degrades to the raw text in monospaced type, so a typo'd diagram stays
 inspectable instead of vanishing.
 
+Need a vector export? `MermaidRenderer.pdfData(source:theme:)` renders the
+same layout as single-page PDF data. Need a description for assistive
+technology? `MermaidRenderer.altText(source:)` — `MermaidView` already
+exposes it to VoiceOver automatically.
+
 Pass an explicit theme to opt out of appearance-following, and a spacing
 preset to control density:
 

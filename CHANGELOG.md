@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.0
+
+Three capabilities from the IR-compilation design review (docs/website has
+the memo's conclusions; SVG/ASCII backends are deliberately deferred until
+there's a concrete consumer):
+
+- **Vector PDF export** — `MermaidRenderer.pdfData(source:theme:spacing:)`:
+  the same layout and draw code as the raster path, into a `CGPDFContext`.
+  Crisp at any zoom; the export/print path. All 23 fixture types verified.
+- **Accessibility alt-text** — every diagram describes itself.
+  `MermaidView` exposes a full content description to VoiceOver
+  ("Flowchart with 12 nodes and 14 connections: ..."), `attachmentString`
+  sets it on the embedded image, `MermaidRenderer.altText(source:)` and
+  the platform-free `MermaidAltText.describe(_:)` expose it directly.
+- **`DiagramColor`** — platform-free sRGB color values in MermaidLayout,
+  and `DiagramTheme.resolved`: every theme color as `DiagramColor`,
+  resolved once under the theme's pinned appearance (the fingerprint now
+  derives from the same pass). The color groundwork for future
+  non-CoreGraphics backends, fully additive.
+- Internals: the per-type render dispatch is factored into `renderPlan` +
+  `paddedCanvas`, shared by raster and PDF — new types reach every output
+  format at once.
+
 ## 0.3.1
 
 - Chain straightening after Brandes-Koepf placement, in both the flowchart

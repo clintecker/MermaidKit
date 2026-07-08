@@ -34,6 +34,7 @@ numbers) and cached per (source, appearance).
 - <doc:Theming>
 - ``DiagramTheme``
 - ``MermaidLayout/DiagramSpacing``
+- ``MermaidLayout/DiagramColor``
 
 ### Embedding in text views
 
