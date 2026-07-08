@@ -28,14 +28,16 @@ extension DiagramScene {
         }
 
         // Free-standing transition labels, centred on the polyline midpoint.
-        let labels: [DiagramScene.Label] = layout.edges.compactMap { edge in
+        let labels: [DiagramScene.Label] = layout.edges.enumerated().compactMap { index, edge in
             guard let text = edge.label, !text.isEmpty else { return nil }
             let poly = edge.points.count >= 2 ? edge.points : [edge.start, edge.end]
             let mid = edge.labelAnchor ?? polylineMidpoint(poly)
             let w = DiagramScene.estimatedLabelSize(text).width
             return DiagramScene.Label(
                 text: text,
-                frame: CGRect(x: mid.x - w / 2, y: mid.y - 7, width: w, height: 14)
+                frame: CGRect(x: mid.x - w / 2, y: mid.y - 7, width: w, height: 14),
+                anchorEdge: index,  // scene edges mirror layout.edges 1:1 above
+                backed: true
             )
         }
 

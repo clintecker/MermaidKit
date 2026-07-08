@@ -32,7 +32,8 @@ extension DiagramScene {
                         x: node.labelCenter.x - w / 2,
                         y: node.labelCenter.y - 7,
                         width: w,
-                        height: 14))
+                        height: 14),
+                    backed: true)
             }
         )
     }

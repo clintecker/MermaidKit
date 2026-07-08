@@ -51,21 +51,23 @@ extension DiagramScene {
             // another row's chip or with a head box. A normal chip centers above
             // the arrow's midpoint; a self-message chip sits to the right of the
             // loop (matching the renderer, which widens the canvas for it).
-            labels: layout.arrows.compactMap { arrow -> Label? in
+            labels: layout.arrows.enumerated().compactMap { index, arrow -> Label? in
                 guard !arrow.text.isEmpty else { return nil }
                 let width = DiagramScene.estimatedLabelSize(arrow.text).width
                 if arrow.isSelfMessage {
                     return Label(
                         text: arrow.text,
                         frame: CGRect(x: arrow.toX + 8, y: arrow.y - 7,
-                                      width: width, height: 14)
+                                      width: width, height: 14),
+                        anchorEdge: index
                     )
                 }
                 let midX = (arrow.fromX + arrow.toX) / 2
                 return Label(
                     text: arrow.text,
                     frame: CGRect(x: midX - width / 2, y: arrow.y - 9,
-                                  width: width, height: 14)
+                                  width: width, height: 14),
+                    anchorEdge: index
                 )
             }
         )

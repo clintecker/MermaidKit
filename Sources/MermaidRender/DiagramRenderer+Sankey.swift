@@ -42,8 +42,17 @@ extension DiagramRenderer {
                           fill: color.withAlphaComponent(0.9), stroke: color, in: context)
         }
 
-        // Labels on top of everything.
+        // Labels on top of everything, each on an opaque canvas chip so a
+        // crossing band never muddies the text (the scene lowering declares
+        // them `backed` on the strength of this fill).
         for node in layout.nodes where !node.label.isEmpty {
+            let size = measure(node.label, size: 11)
+            let pad: CGFloat = 3
+            context.setFillColor(resolvedCGColor(theme.canvas))
+            context.fill(CGRect(
+                x: node.labelCenter.x - size.width / 2 - pad,
+                y: node.labelCenter.y - size.height / 2 - pad,
+                width: size.width + pad * 2, height: size.height + pad * 2))
             drawText(node.label, center: node.labelCenter, size: 11, color: theme.ink, in: context)
         }
     }

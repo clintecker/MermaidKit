@@ -171,8 +171,9 @@ layout (all three properties are enforced by tests).
 MermaidLayout includes something unusual: every diagram lowers to a
 `DiagramScene` — a `Codable`, machine-readable IR of boxes, edge routes, and
 labels — and `DiagramLayoutLinter` checks it against geometric invariants of
-good layout (no edge through a box, no overlapping nodes, no off-canvas or
-colliding labels, no marks escaping a plot). The linter runs in this
+good layout (no edge through a box, no edge slicing through bare label text,
+no overlapping nodes, no off-canvas or colliding labels, no marks escaping a
+plot). The linter runs in this
 package's test suite over dense fixtures for all 23 types, so layout
 regressions fail CI as *geometry* ("edge #3 passes through node 'DiagramScene' (165pt inside)"), not as pixel diffs.
 

@@ -26,7 +26,7 @@ extension DiagramScene {
             // Free-standing edge labels only: an edge's centred |label| chip can
             // collide with boxes or other labels. Center at the layout's chosen
             // labelPoint (fall back to the route midpoint, matching the renderer).
-            labels: layout.edges.compactMap { edge -> Label? in
+            labels: layout.edges.enumerated().compactMap { index, edge -> Label? in
                 guard let text = edge.label, !text.isEmpty else { return nil }
                 let center = edge.labelPoint ?? CGPoint(
                     x: (edge.start.x + edge.end.x) / 2,
@@ -36,7 +36,8 @@ extension DiagramScene {
                 return Label(
                     text: text,
                     frame: CGRect(x: center.x - width / 2, y: center.y - 7,
-                                  width: width, height: 14)
+                                  width: width, height: 14),
+                    anchorEdge: index, backed: true
                 )
             }
         )

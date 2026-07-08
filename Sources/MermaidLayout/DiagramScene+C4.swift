@@ -22,7 +22,7 @@ extension DiagramScene {
             edges: layout.edges.map { edge in
                 Edge(polyline: edge.points, label: edge.label)
             },
-            labels: layout.edges.compactMap { edge -> Label? in
+            labels: layout.edges.enumerated().compactMap { index, edge -> Label? in
                 guard let text = edge.label, !text.isEmpty else { return nil }
                 let w = DiagramScene.estimatedLabelSize(text).width
                 let half = w / 2
@@ -31,7 +31,8 @@ extension DiagramScene {
                 let cx = min(max(edge.labelPoint.x, half + 1), layout.size.width - half - 1)
                 return Label(text: text,
                              frame: CGRect(x: cx - half, y: edge.labelPoint.y - 7,
-                                           width: w, height: 14))
+                                           width: w, height: 14),
+                             anchorEdge: index, backed: true)
             }
         )
     }

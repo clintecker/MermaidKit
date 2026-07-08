@@ -70,8 +70,8 @@ MIT.
 - The differentiator worth a whole page/section: **the geometry linter**.
   Every diagram lowers to a Codable scene IR (boxes, edge polylines,
   labels); a linter checks invariants of good layout (no edge through a
-  box, no overlapping nodes, nothing off-canvas, no series escaping its
-  plot). Layout regressions fail CI as geometry ("edge #3 passes through
+  box, no line slicing through label text, no overlapping nodes, nothing
+  off-canvas, no series escaping its plot). Layout regressions fail CI as geometry ("edge #3 passes through
   node 'DiagramScene' (165pt inside)"), not pixel diffs. No other Mermaid
   renderer does this.
 

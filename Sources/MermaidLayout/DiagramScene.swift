@@ -50,10 +50,24 @@ public struct DiagramScene: Sendable, Codable {
         public let text: String
         /// The label's frame in canvas coordinates.
         public let frame: CGRect
-        /// Creates a free-standing label.
-        public init(text: String, frame: CGRect) {
+        /// Index into `edges` of the edge this label annotates, when it is an
+        /// edge label placed ON its own route (a transition label at the
+        /// polyline midpoint). That one edge is exempt from the
+        /// edge-cuts-label check; every other edge still is not allowed to
+        /// slice through the text. Nil for genuinely free-standing labels.
+        public let anchorEdge: Int?
+        /// True when the renderer paints an opaque canvas chip behind this
+        /// label. A foreign edge passing under a backed label is interrupted
+        /// by the chip and the text stays readable (standard Mermaid
+        /// convention), so backed labels are exempt from `edge-cuts-label`.
+        public let backed: Bool
+        /// Creates a label; pass `anchorEdge` when it annotates an edge and
+        /// `backed` when it is drawn on an opaque chip.
+        public init(text: String, frame: CGRect, anchorEdge: Int? = nil, backed: Bool = false) {
             self.text = text
             self.frame = frame
+            self.anchorEdge = anchorEdge
+            self.backed = backed
         }
     }
 
@@ -115,6 +129,10 @@ public enum DiagramLayoutLinter {
     /// - `off-canvas`: a node or label extends outside the canvas (±1pt).
     /// - `mark-escapes-plot`: when the largest container covers >35% of the
     ///   canvas (a chart plot), an edge vertex lies more than 2pt outside it.
+    /// - `edge-cuts-label`: an edge travels >6pt inside a BARE label's text
+    ///   frame. A label's own `anchorEdge` is exempt (edge labels sit on
+    ///   their route by design), as are `backed` labels (their opaque chip
+    ///   interrupts the line; the text stays readable).
     ///
     /// Warnings:
     /// - `labels-overlap`: two labels share more than 4pt² of area.
@@ -193,6 +211,28 @@ public enum DiagramLayoutLinter {
                 if overlapArea(a, node.frame) > 0.5 * a.width * a.height {
                     out.append(.init(.warning, "label-over-node",
                         "label \"\(scene.labels[i].text)\" sits on node \"\(node.id)\""))
+                }
+            }
+        }
+
+        // 4b. An edge slicing through label text (error). Free-standing text
+        //     a line runs through is unreadable — this is the class of defect
+        //     a human catches instantly ("the branch line goes through 'label
+        //     reservation'") that was invisible here until labels learned to
+        //     name their own edge: an edge label legitimately sits ON its own
+        //     route (`anchorEdge`), so only OTHER edges count against it.
+        //     Same inside-length measure as edge-occludes-node, scaled to
+        //     label size: flag when a wire travels more than 6pt inside the
+        //     slightly-inset text frame.
+        for (li, label) in scene.labels.enumerated() where !label.backed {
+            let inner = label.frame.insetBy(dx: 2, dy: 2)
+            guard inner.width > 0, inner.height > 0 else { continue }
+            for (ei, edge) in scene.edges.enumerated() where ei != label.anchorEdge {
+                let segs = Array(zip(edge.polyline, edge.polyline.dropFirst()))
+                let insideLength = segs.reduce(CGFloat(0)) { $0 + segmentInsideLength($1.0, $1.1, inner) }
+                if insideLength > 6 {
+                    out.append(.init(.error, "edge-cuts-label",
+                        "edge #\(ei) cuts through label \"\(scene.labels[li].text)\" (\(Int(insideLength))pt inside)"))
                 }
             }
         }

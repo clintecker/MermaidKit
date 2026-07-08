@@ -24,13 +24,14 @@ extension DiagramScene {
 
         // Free-standing relationship labels, placed at the route midpoint so the
         // linter can check them for collisions with boxes and each other.
-        let labels: [Label] = layout.edges.compactMap { edge in
+        let labels: [Label] = layout.edges.enumerated().compactMap { index, edge in
             guard !edge.label.isEmpty else { return nil }
             let mid = edge.labelAnchor ?? polylineMidpoint(edge.points)
             let w = DiagramScene.estimatedLabelSize(edge.label).width
             return Label(
                 text: edge.label,
-                frame: CGRect(x: mid.x - w / 2, y: mid.y - 7, width: w, height: 14)
+                frame: CGRect(x: mid.x - w / 2, y: mid.y - 7, width: w, height: 14),
+                anchorEdge: index, backed: true
             )
         }
 

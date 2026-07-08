@@ -51,21 +51,23 @@ extension DiagramScene {
             // (matching the renderer, which widens the canvas for it). Head names
             // are implicit in their Node, and the `«Stereotype»` line is drawn
             // inside the head box (node-internal), so neither is listed here.
-            labels: layout.arrows.compactMap { arrow -> Label? in
+            labels: layout.arrows.enumerated().compactMap { index, arrow -> Label? in
                 guard !arrow.label.isEmpty else { return nil }
                 let width = DiagramScene.estimatedLabelSize(arrow.label).width
                 if arrow.isSelf {
                     return Label(
                         text: arrow.label,
                         frame: CGRect(x: arrow.toX + 8, y: arrow.y - 7,
-                                      width: width, height: 14)
+                                      width: width, height: 14),
+                        anchorEdge: index
                     )
                 }
                 let midX = (arrow.fromX + arrow.toX) / 2
                 return Label(
                     text: arrow.label,
                     frame: CGRect(x: midX - width / 2, y: arrow.y - 9,
-                                  width: width, height: 14)
+                                  width: width, height: 14),
+                    anchorEdge: index
                 )
             }
         )

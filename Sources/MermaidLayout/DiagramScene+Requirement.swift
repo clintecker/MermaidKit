@@ -29,7 +29,7 @@ extension DiagramScene {
         // Free-standing relationship labels, placed at the route midpoint (by
         // arc length) so the linter can check them for collisions. Clamped to
         // the canvas so a route near an edge doesn't push the label off-canvas.
-        let labels: [Label] = layout.edges.compactMap { edge in
+        let labels: [Label] = layout.edges.enumerated().compactMap { index, edge in
             guard !edge.label.isEmpty else { return nil }
             let mid = polylineMidpoint(edge.points)
             let w = DiagramScene.estimatedLabelSize(edge.label).width
@@ -37,7 +37,8 @@ extension DiagramScene {
             var yTop = mid.y - 7
             x = max(0, min(x, layout.size.width - w))
             yTop = max(0, min(yTop, layout.size.height - 14))
-            return Label(text: edge.label, frame: CGRect(x: x, y: yTop, width: w, height: 14))
+            return Label(text: edge.label, frame: CGRect(x: x, y: yTop, width: w, height: 14),
+                         anchorEdge: index, backed: true)
         }
 
         return DiagramScene(
