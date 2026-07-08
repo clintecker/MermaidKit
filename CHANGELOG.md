@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1
+
+- Chain straightening after Brandes-Koepf placement, in both the flowchart
+  pipeline and the class/ER/state layeredRoutes: BK's balancing step leaves
+  single-parent chains a few points off their neighbour's centre (a visible
+  jog, with the edge label on the kink). A gap-clamped priority pass
+  (Gansner et al. section 4.2, degree-1 case) snaps them straight; where
+  parent and child alignment genuinely conflict, one clean alignment wins
+  over two half-jogs. Pinned by ChainAlignmentTests at 0.5pt.
+
 ## 0.3.0
 
 The gallery becomes the documentation, and the linter learns to read.
