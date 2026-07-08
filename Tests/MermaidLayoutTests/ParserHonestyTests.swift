@@ -98,8 +98,9 @@ final class ParserHonestyTests: XCTestCase {
 
     func testAutonumberStampsMessages() throws {
         let s = try seq("autonumber\nA->>B: first\nB->>A: second")
-        XCTAssertEqual(s.messages[0].text, "1. first")
-        XCTAssertEqual(s.messages[1].text, "2. second")
+        XCTAssertEqual(s.messages.map(\.number), [1, 2],
+                       "numbers ride as badge metadata, not text mutations")
+        XCTAssertEqual(s.messages[0].text, "first")
     }
 
     func testActorAliasKeepsItsLabel() throws {
@@ -271,5 +272,39 @@ extension ParserHonestyTests {
         """) else { return XCTFail() }
         XCTAssertEqual(s.participants.first(where: { $0.id == "Alice" })?.isActor, true)
         XCTAssertEqual(s.participants.first(where: { $0.id == "Bob" })?.isActor, false)
+    }
+}
+
+extension ParserHonestyTests {
+    func testArrowHeadIdentity() throws {
+        let s = try seqPub("""
+        A->B: bare
+        A->>B: filled
+        A-x B: cross
+        A-) B: async
+        A<<->>B: both
+        """)
+        let heads = s.messages.map(\.head)
+        XCTAssertEqual(heads, [.none, .filled, .cross, .open, .both],
+                       "all eight tokens once collapsed into one dashed bool")
+    }
+
+    func testAutonumberVariants() throws {
+        let s = try seqPub("""
+        autonumber 10 5
+        A->>B: first
+        B->>A: second
+        autonumber off
+        A->>B: unnumbered
+        """)
+        XCTAssertEqual(s.messages.map(\.number), [10, 15, nil])
+        XCTAssertEqual(s.messages[0].text, "first", "numbers are badges, not text prefixes")
+    }
+
+    private func seqPub(_ body: String) throws -> SequenceDiagram {
+        guard case .sequence(let s)? = MermaidParser.parse("sequenceDiagram\n" + body) else {
+            throw XCTSkip("parse failed")
+        }
+        return s
     }
 }

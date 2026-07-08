@@ -12,6 +12,46 @@ import UIKit
 
 extension DiagramRenderer {
 
+    /// Draws the arrow ending for a sequence head style: filled triangle,
+    /// cross, open half-arrow, or nothing.
+    private static func drawSequenceHead(
+        _ head: SequenceDiagram.Message.ArrowHead,
+        at tip: CGPoint, from origin: CGPoint,
+        stroke: PlatformColor, theme: DiagramTheme, in context: CGContext
+    ) {
+        switch head {
+        case .none:
+            return
+        case .filled, .both:
+            drawArrowhead(at: tip, from: origin, color: stroke, canvas: theme.canvas, in: context)
+        case .cross:
+            let r: CGFloat = 4.5
+            let inset: CGFloat = tip.x >= origin.x ? -3 : 3
+            let cx = tip.x + inset
+            context.setStrokeColor(resolvedCGColor(stroke))
+            context.setLineWidth(1.6)
+            context.beginPath()
+            context.move(to: CGPoint(x: cx - r, y: tip.y - r))
+            context.addLine(to: CGPoint(x: cx + r, y: tip.y + r))
+            context.move(to: CGPoint(x: cx - r, y: tip.y + r))
+            context.addLine(to: CGPoint(x: cx + r, y: tip.y - r))
+            context.strokePath()
+        case .open:
+            let angle = atan2(tip.y - origin.y, tip.x - origin.x)
+            let length: CGFloat = 9
+            let spread: CGFloat = 0.5
+            context.setStrokeColor(resolvedCGColor(stroke))
+            context.setLineWidth(1.4)
+            context.beginPath()
+            context.move(to: CGPoint(x: tip.x - length * cos(angle - spread),
+                                     y: tip.y - length * sin(angle - spread)))
+            context.addLine(to: tip)
+            context.addLine(to: CGPoint(x: tip.x - length * cos(angle + spread),
+                                        y: tip.y - length * sin(angle + spread)))
+            context.strokePath()
+        }
+    }
+
     static func draw(_ layout: SequenceLayout, theme: DiagramTheme, in context: CGContext) {
         let stroke = theme.ink.withAlphaComponent(0.35)
         let hairline = theme.ink.withAlphaComponent(0.18)
@@ -56,6 +96,21 @@ extension DiagramRenderer {
             }
         }
 
+        // Autonumber badges: a small chip at the sender end of the arrow.
+        for arrow in layout.arrows where arrow.number != nil {
+            let text = "\(arrow.number!)"
+            let size = measure(text, size: 8)
+            let sign: CGFloat = arrow.toX >= arrow.fromX ? 1 : -1
+            let chip = CGRect(x: arrow.fromX + sign * 4 - (sign < 0 ? size.width + 8 : 0),
+                              y: arrow.y - 17,
+                              width: size.width + 8, height: 12)
+            context.setFillColor(resolvedCGColor(theme.accent.withAlphaComponent(0.85)))
+            context.addPath(CGPath(roundedRect: chip, cornerWidth: 5, cornerHeight: 5, transform: nil))
+            context.fillPath()
+            drawText(text, center: CGPoint(x: chip.midX, y: chip.midY),
+                     size: 8, weight: .semibold, color: theme.canvas, in: context)
+        }
+
         // Note boxes: tinted, hairline-bordered, text centered — the classic
         // sequence-note look.
         for note in layout.notes {
@@ -86,11 +141,10 @@ extension DiagramRenderer {
             context.restoreGState()
 
             if arrow.isSelfMessage {
-                drawArrowhead(
+                drawSequenceHead(arrow.head,
                     at: CGPoint(x: arrow.fromX, y: arrow.y + 12),
                     from: CGPoint(x: arrow.toX, y: arrow.y + 12),
-                    color: stroke, canvas: theme.canvas, in: context
-                )
+                    stroke: stroke, theme: theme, in: context)
                 if !arrow.text.isEmpty {
                     let size = measure(arrow.text, size: 10.5)
                     drawText(arrow.text,
@@ -98,11 +152,16 @@ extension DiagramRenderer {
                              size: 10.5, color: theme.secondaryTextColor, in: context)
                 }
             } else {
-                drawArrowhead(
+                drawSequenceHead(arrow.head,
                     at: CGPoint(x: arrow.toX, y: arrow.y),
                     from: CGPoint(x: arrow.fromX, y: arrow.y),
-                    color: stroke, canvas: theme.canvas, in: context
-                )
+                    stroke: stroke, theme: theme, in: context)
+                if arrow.head == .both {
+                    drawSequenceHead(.filled,
+                        at: CGPoint(x: arrow.fromX, y: arrow.y),
+                        from: CGPoint(x: arrow.toX, y: arrow.y),
+                        stroke: stroke, theme: theme, in: context)
+                }
                 if !arrow.text.isEmpty {
                     drawText(arrow.text,
                              center: CGPoint(x: (arrow.fromX + arrow.toX) / 2, y: arrow.y - 10),

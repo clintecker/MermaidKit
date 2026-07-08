@@ -811,8 +811,19 @@ public enum MermaidParser {
         }
 
         var autonumber = 0   // 0 = off; >0 = next number to stamp
+        var autonumberStep = 1
         for line in body {
-            if line == "autonumber" { autonumber = 1; continue }
+            if line == "autonumber" || line.hasPrefix("autonumber ") {
+                // `autonumber` / `autonumber 10` / `autonumber 10 5` /
+                // `autonumber off`.
+                let parts = line.split(separator: " ").dropFirst().map(String.init)
+                if parts.first == "off" { autonumber = 0 }
+                else {
+                    autonumber = parts.first.flatMap(Int.init) ?? 1
+                    autonumberStep = parts.count > 1 ? (Int(parts[1]) ?? 1) : 1
+                }
+                continue
+            }
             if line.hasPrefix("participant") || line.hasPrefix("actor") {
                 // Strip only the leading keyword — a global replace once
                 // corrupted labels containing the word "actor ".
@@ -863,18 +874,21 @@ public enum MermaidParser {
             }
 
             // Messages. Longest token first so `-->>` never part-matches as
-            // `-->`. Cross (`-x`) and async (`-)`) heads parse as their base
-            // arrows — head style is an honest degradation, but the message
-            // and its text survive.
-            for (token, dashed) in [("--)", true), ("-->>", true), ("->>", false),
-                                    ("-->", true), ("--x", true), ("-)", false),
-                                    ("-x", false), ("->", false)] {
+            // `-->`. Every mermaid arrow token maps to its true head style.
+            typealias Head = SequenceDiagram.Message.ArrowHead
+            let arrowTokens: [(token: String, dashed: Bool, head: Head)] = [
+                ("<<-->>", true, .both), ("<<->>", false, .both),
+                ("--)", true, .open), ("-->>", true, .filled), ("->>", false, .filled),
+                ("-->", true, .none), ("--x", true, .cross), ("-)", false, .open),
+                ("-x", false, .cross), ("->", false, .none),
+            ]
+            for (token, dashed, head) in arrowTokens {
                 guard let range = line.range(of: token) else { continue }
                 var from = String(line[..<range.lowerBound]).trimmingCharacters(in: .whitespaces)
                 let remainder = String(line[range.upperBound...])
                 let pieces = remainder.split(separator: ":", maxSplits: 1)
                 var to = pieces.first.map { String($0).trimmingCharacters(in: .whitespaces) } ?? ""
-                var text = pieces.count > 1 ? String(pieces[1]).trimmingCharacters(in: .whitespaces) : ""
+                let text = pieces.count > 1 ? String(pieces[1]).trimmingCharacters(in: .whitespaces) : ""
                 // Activation shorthand: `A->>+B:` / `B->>-A:` — the +/- binds
                 // activation, it is NOT part of the participant name. The old
                 // parser minted phantom "+B"/"-B" lifelines from the docs'
@@ -882,13 +896,16 @@ public enum MermaidParser {
                 if to.hasPrefix("+") || to.hasPrefix("-") { to = String(to.dropFirst()).trimmingCharacters(in: .whitespaces) }
                 if from.hasSuffix("+") || from.hasSuffix("-") { from = String(from.dropLast()).trimmingCharacters(in: .whitespaces) }
                 guard !from.isEmpty, !to.isEmpty else { break }
+                var number: Int?
                 if autonumber > 0 {
-                    text = text.isEmpty ? "\(autonumber)." : "\(autonumber). \(text)"
-                    autonumber += 1
+                    number = autonumber
+                    autonumber += autonumberStep
                 }
                 note(from)
                 note(to)
-                messages.append(SequenceDiagram.Message(from: from, to: to, text: text, dashed: dashed))
+                messages.append(SequenceDiagram.Message(
+                    from: from, to: to, text: text, dashed: dashed,
+                    head: head, number: number))
                 break
             }
         }

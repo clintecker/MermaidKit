@@ -721,7 +721,9 @@ extension DiagramLayoutEngine {
                 y: arrowsTop + CGFloat(rowOfMessage(index)) * rowHeight,
                 text: message.text,
                 dashed: message.dashed,
-                isSelfMessage: isSelf
+                isSelfMessage: isSelf,
+                head: message.head,
+                number: message.number
             ))
         }
         var noteBoxes: [SequenceLayout.NoteBox] = []

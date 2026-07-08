@@ -102,15 +102,23 @@ public struct SequenceLayout: Sendable {
         public let dashed: Bool
         /// Message to the same participant: drawn as a small loop.
         public let isSelfMessage: Bool
+        /// Arrowhead style (raw value of `SequenceDiagram.Message.ArrowHead`).
+        public let head: SequenceDiagram.Message.ArrowHead
+        /// Autonumber badge, when active.
+        public let number: Int?
 
         /// Creates an arrow; defaults to a normal (non-self) message.
-        public init(fromX: CGFloat, toX: CGFloat, y: CGFloat, text: String, dashed: Bool, isSelfMessage: Bool = false) {
+        public init(fromX: CGFloat, toX: CGFloat, y: CGFloat, text: String, dashed: Bool,
+                    isSelfMessage: Bool = false,
+                    head: SequenceDiagram.Message.ArrowHead = .filled, number: Int? = nil) {
             self.fromX = fromX
             self.toX = toX
             self.y = y
             self.text = text
             self.dashed = dashed
             self.isSelfMessage = isSelfMessage
+            self.head = head
+            self.number = number
         }
     }
 

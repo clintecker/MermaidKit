@@ -125,6 +125,21 @@ public struct SequenceDiagram: Hashable, Sendable {
 
     /// One message arrow.
     public struct Message: Hashable, Sendable {
+        /// Arrowhead identity — mermaid's eight arrow tokens differ by head
+        /// as well as line style, and the head carries meaning (sync call vs
+        /// async signal vs lost message).
+        public enum ArrowHead: String, Hashable, Sendable {
+            /// `->` / `-->`: a bare line, no head.
+            case none
+            /// `->>` / `-->>`: filled arrowhead (synchronous call).
+            case filled
+            /// `-x` / `--x`: cross head (lost/terminated message).
+            case cross
+            /// `-)` / `--)`: open half-arrow (asynchronous signal).
+            case open
+            /// `<<->>` / `<<-->>`: filled heads at BOTH ends.
+            case both
+        }
         /// Sender participant id (an id in `participants`).
         public let from: String
         /// Receiver participant id (an id in `participants`).
@@ -132,6 +147,10 @@ public struct SequenceDiagram: Hashable, Sendable {
         public var text: String
         /// Reply arrows (`-->`, `-->>`) draw dashed.
         public var dashed: Bool
+        /// Head style; `.filled` matches the most common token (`->>`).
+        public var head: ArrowHead = .filled
+        /// Autonumber badge value, when `autonumber` is active.
+        public var number: Int?
     }
 
     /// Participants in first-appearance order (declared or first messaged).
