@@ -197,8 +197,10 @@ enum DiagramRenderer {
             // an explicit opposite-appearance theme, and unspecified on the
             // async path's detached thread.
             let traits = UITraitCollection(userInterfaceStyle: theme.prefersDark ? .dark : .light)
-            let format = UIGraphicsImageRendererFormat()
-            format.traitCollection = traits
+            // `preferred()` snapshots UITraitCollection.current, so resolve it
+            // under the pinned traits (the format type has no trait property).
+            var format = UIGraphicsImageRendererFormat.preferred()
+            traits.performAsCurrent { format = .preferred() }
             let renderer = UIGraphicsImageRenderer(size: canvasSize, format: format)
             let image = renderer.image { rendererContext in
                 traits.performAsCurrent {

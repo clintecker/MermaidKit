@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1
+
+- Fix iOS build: v0.1.0's trait pinning used a nonexistent
+  `UIGraphicsImageRendererFormat.traitCollection` property (the UIKit branch
+  had never been compiled). The format is now resolved via `.preferred()`
+  under the pinned traits.
+- CI now compiles MermaidRender for the iOS Simulator on every push, so the
+  UIKit branch can't silently break again.
+
 ## Unreleased (pre-0.1)
 
 Initial extraction from [Quoin](https://github.com/clintecker/quoin).

@@ -25,3 +25,11 @@ jobs:
         run: swift build
       - name: Test
         run: swift test
+
+      # The UIKit render branch has no test host, but it must always COMPILE —
+      # v0.1.0 shipped an iOS-only build break precisely because nothing
+      # exercised this branch.
+      - name: Build for iOS Simulator
+        run: |
+          set -o pipefail
+          xcodebuild -scheme MermaidRender             -destination 'generic/platform=iOS Simulator' build 2>&1 | tail -30
