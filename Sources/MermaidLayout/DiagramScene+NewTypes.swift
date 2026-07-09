@@ -74,6 +74,19 @@ extension DiagramScene {
             nodes.append(Node(id: center.domain, frame: center.frame, isContainer: true))
         }
         var labels: [Label] = []
+        for quadrant in layout.quadrants {
+            // Domain heading + heuristic subtitle, drawn inside the container.
+            let nameWidth = DiagramScene.estimatedLabelSize(quadrant.name).width
+            labels.append(Label(
+                text: quadrant.name,
+                frame: CGRect(x: quadrant.frame.midX - nameWidth / 2,
+                              y: quadrant.frame.minY + 11, width: nameWidth, height: 14)))
+            let heuristicWidth = DiagramScene.estimatedLabelSize(quadrant.heuristic).width
+            labels.append(Label(
+                text: quadrant.heuristic,
+                frame: CGRect(x: quadrant.frame.midX - heuristicWidth / 2,
+                              y: quadrant.frame.minY + 28, width: heuristicWidth, height: 12)))
+        }
         for quadrant in layout.quadrants + (layout.center.map { [$0] } ?? []) {
             for item in quadrant.items {
                 let w = DiagramScene.estimatedLabelSize(item.text).width

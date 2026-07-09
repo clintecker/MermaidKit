@@ -42,7 +42,10 @@ extension DiagramRenderer {
                 context.setLineWidth(cell.depth == 1 ? 1.5 : 1)
                 context.stroke(cell.frame)
                 context.restoreGState()
-                if cell.frame.height > 44, cell.frame.width > 40 {
+                if cell.frame.height > 44, cell.frame.width > 40,
+                   measure(cell.label, size: 9.5, weight: .semibold).width <= cell.frame.width - 12 {
+                    // Width-guarded like leaf labels: a long header once
+                    // spilled across its sibling cells.
                     drawTextLeft(cell.label, at: CGPoint(x: cell.frame.minX + 6, y: cell.frame.minY + 10),
                                  size: 9.5, weight: .semibold, color: theme.secondaryTextColor, in: context)
                 }

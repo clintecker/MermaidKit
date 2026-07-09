@@ -32,12 +32,25 @@ extension DiagramScene {
         // Orthogonal wires; architecture edges carry no labels.
         let edges = layout.edges.map { DiagramScene.Edge(polyline: $0.points, label: nil) }
 
+        // Group title strips are drawn text on container bands — free-
+        // standing as far as the linter is concerned.
+        let labels: [DiagramScene.Label] = layout.groups.compactMap { group in
+            guard !group.label.isEmpty else { return nil }
+            let iconOffset: CGFloat = group.icon.isEmpty ? 0 : 14
+            let width = DiagramScene.estimatedLabelSize(group.label).width
+            return DiagramScene.Label(
+                text: group.label,
+                frame: CGRect(x: group.titleOrigin.x + iconOffset,
+                              y: group.titleOrigin.y - 7,
+                              width: width, height: 14))
+        }
+
         return DiagramScene(
             name: "architecture",
             size: layout.size,
             nodes: nodes,
             edges: edges,
-            labels: []
+            labels: labels
         )
     }
 }

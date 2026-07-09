@@ -24,9 +24,19 @@ extension DiagramScene {
             },
             // Treemaps have no connectors.
             edges: [],
-            // Each cell's label is centred inside its own rect (implicit in the Node),
-            // so there are no free-standing labels to collide.
-            labels: []
+            // Leaf labels are centred inside their own rects (implicit in the
+            // Node), but GROUP HEADERS are drawn left-anchored at the top of
+            // container cells — free-standing text the linter must see
+            // (mirrors the renderer's roominess + fits-width guards).
+            labels: layout.cells.compactMap { cell in
+                guard !cell.isLeaf, cell.frame.height > 44, cell.frame.width > 40 else { return nil }
+                let width = DiagramScene.estimatedLabelSize(cell.label).width
+                guard width <= cell.frame.width - 12 else { return nil }
+                return Label(
+                    text: cell.label,
+                    frame: CGRect(x: cell.frame.minX + 6, y: cell.frame.minY + 3,
+                                  width: width, height: 14))
+            }
         )
     }
 }

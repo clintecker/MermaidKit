@@ -41,12 +41,24 @@ extension DiagramScene {
             )
         }
 
+        // Composite title strips: drawn centred in the container's title
+        // band; lower them so content can't overdraw a composite's name.
+        let compositeTitles: [DiagramScene.Label] = layout.containers.compactMap { container in
+            guard !container.label.isEmpty else { return nil }
+            let width = DiagramScene.estimatedLabelSize(container.label).width
+            return DiagramScene.Label(
+                text: container.label,
+                frame: CGRect(x: container.frame.midX - width / 2,
+                              y: container.frame.minY + container.titleHeight / 2 - 7,
+                              width: width, height: 14))
+        }
+
         return DiagramScene(
             name: "state",
             size: layout.size,
             nodes: nodes,
             edges: edges,
-            labels: labels
+            labels: labels + compositeTitles
         )
     }
 

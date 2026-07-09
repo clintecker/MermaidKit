@@ -20,7 +20,13 @@ extension DiagramScene {
             // rectangles a message could be routed through; the lifelines they
             // sit atop are guides, not nodes. Heads contain nothing else.
             nodes: layout.heads.map { head in
-                Node(id: head.label, frame: head.frame, isContainer: false)
+                // Actor and typed-glyph heads draw their NAME 7pt below the
+                // frame; extend the node so the linter sees the text too.
+                var frame = head.frame
+                if head.isActor || head.kind != "participant" {
+                    frame.size.height += 14
+                }
+                return Node(id: head.label, frame: frame, isContainer: false)
             } + layout.notes.map { note in
                 // Note boxes are opaque rectangles in the message field; the
                 // linter must see them so a crossing arrow gets flagged.
@@ -69,22 +75,68 @@ extension DiagramScene {
             // loop (matching the renderer, which widens the canvas for it).
             labels: layout.arrows.enumerated().compactMap { index, arrow -> Label? in
                 guard !arrow.text.isEmpty else { return nil }
-                let width = DiagramScene.estimatedLabelSize(arrow.text).width
+                let lines = DiagramLayoutEngine.brLines(arrow.text)
+                let width = lines.map { DiagramScene.estimatedLabelSize($0).width }.max()
+                    ?? DiagramScene.estimatedLabelSize(arrow.text).width
                 if arrow.isSelfMessage {
+                    // Drawn right of the loop, centred at arrow.y + 6.
                     return Label(
                         text: arrow.text,
-                        frame: CGRect(x: arrow.toX + 8, y: arrow.y - 7,
+                        frame: CGRect(x: arrow.toX + 8, y: arrow.y - 1,
                                       width: width, height: 14),
                         anchorEdge: index
                     )
                 }
+                // Drawn ABOVE the arrow: line i centres at
+                // y - 10 - (n-1-i)*12, so the block spans upward from the row.
+                let blockHeight = 14 + CGFloat(lines.count - 1) * 12
                 let midX = (arrow.fromX + arrow.toX) / 2
                 return Label(
                     text: arrow.text,
-                    frame: CGRect(x: midX - width / 2, y: arrow.y - 9,
-                                  width: width, height: 14),
+                    frame: CGRect(x: midX - width / 2,
+                                  y: arrow.y - 10 - CGFloat(lines.count - 1) * 12 - 7,
+                                  width: width, height: blockHeight),
                     anchorEdge: index
                 )
+            } + layout.arrows.enumerated().compactMap { index, arrow -> Label? in
+                // Autonumber chips: an opaque accent chip at the sender end.
+                guard let number = arrow.number else { return nil }
+                let text = "\(number)"
+                let width = DiagramScene.estimatedLabelSize(text).width + 8
+                let sign: CGFloat = arrow.toX >= arrow.fromX ? 1 : -1
+                let x = arrow.fromX + sign * 4 - (sign < 0 ? width : 0)
+                return Label(text: text,
+                             frame: CGRect(x: x, y: arrow.y - 17, width: width, height: 12),
+                             anchorEdge: index, backed: true)
+            } + layout.frames.flatMap { frame -> [Label] in
+                guard frame.kind != "rect" else { return [] }
+                // Kind tab + optional [guard] beside it, then each divider's
+                // canvas-chipped [label].
+                var out: [Label] = []
+                let kindWidth = DiagramScene.estimatedLabelSize(frame.kind).width
+                out.append(Label(
+                    text: frame.kind,
+                    frame: CGRect(x: frame.rect.minX + 5, y: frame.rect.minY + 1,
+                                  width: kindWidth, height: 13)))
+                if let guardText = frame.label, !guardText.isEmpty {
+                    let text = "[\(guardText)]"
+                    let width = DiagramScene.estimatedLabelSize(text).width
+                    out.append(Label(
+                        text: text,
+                        frame: CGRect(x: frame.rect.minX + kindWidth + 20,
+                                      y: frame.rect.minY + 1, width: width, height: 13)))
+                }
+                for divider in frame.dividers {
+                    guard let label = divider.label, !label.isEmpty else { continue }
+                    let text = "[\(label)]"
+                    let width = DiagramScene.estimatedLabelSize(text).width + 6
+                    out.append(Label(
+                        text: text,
+                        frame: CGRect(x: frame.rect.midX - width / 2, y: divider.y - 7,
+                                      width: width, height: 14),
+                        backed: true))
+                }
+                return out
             } + layout.boxBands.compactMap { band -> Label? in
                 guard let text = band.label, !text.isEmpty else { return nil }
                 let width = DiagramScene.estimatedLabelSize(text).width
