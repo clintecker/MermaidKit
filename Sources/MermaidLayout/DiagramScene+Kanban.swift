@@ -7,7 +7,7 @@ extension DiagramScene {
     /// Lowers a kanban layout to the common scene IR: column header bands are
     /// containers and cards are plain nodes. All text is node-internal, so
     /// there are no edges and no free-standing labels.
-    static func from(_ layout: KanbanLayout) -> DiagramScene {
+    static func from(_ layout: KanbanLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         var nodes: [DiagramScene.Node] = []
 
         // Column headers are tinted bands that head each lane; treat them as

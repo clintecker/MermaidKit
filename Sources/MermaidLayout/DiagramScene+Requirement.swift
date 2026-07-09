@@ -8,7 +8,7 @@ extension DiagramScene {
     /// element blocks are plain nodes, relationships are orthogonal edges,
     /// and each verb becomes a free-standing Label at the route's arc-length
     /// midpoint, clamped on-canvas.
-    static func from(_ layout: RequirementLayout) -> DiagramScene {
+    static func from(_ layout: RequirementLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         // Each requirement / element block is a visible box (stereotype + name +
         // detail rows). A box does not *contain* other diagram nodes, so it is a
         // plain node subject to overlap and occlusion checks.
@@ -32,7 +32,7 @@ extension DiagramScene {
         let labels: [Label] = layout.edges.enumerated().compactMap { index, edge in
             guard !edge.label.isEmpty else { return nil }
             let mid = polylineMidpoint(edge.points)
-            let w = DiagramScene.estimatedLabelSize(edge.label).width
+            let w = measuredLabelSize(measure, edge.label).width
             var x = mid.x - w / 2
             var yTop = mid.y - 7
             x = max(0, min(x, layout.size.width - w))

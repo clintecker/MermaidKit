@@ -56,13 +56,13 @@ final class DiagramSpacingTests: XCTestCase {
     func testCompactStaysOcclusionFree() throws {
         guard case .classDiagram(let cls) = try fixture("class") else { return XCTFail() }
         let classLayout = DiagramLayoutEngine.layout(cls, measure: measure, spacing: .compact)
-        let classScene = DiagramScene.from(classLayout)
+        let classScene = DiagramScene.from(classLayout, measure: measure)
         XCTAssertEqual(DiagramLayoutLinter.lint(classScene).filter { $0.severity == .error }.count, 0,
                        "compact class layout must stay occlusion-free")
 
         guard case .flowchart(let flow) = try fixture("flowchart") else { return XCTFail() }
         let flowLayout = DiagramLayoutEngine.layout(flow, measure: measure, spacing: .compact)
-        let flowScene = DiagramScene.from(flowLayout)
+        let flowScene = DiagramScene.from(flowLayout, measure: measure)
         XCTAssertEqual(DiagramLayoutLinter.lint(flowScene).filter { $0.severity == .error }.count, 0,
                        "compact flowchart layout must stay occlusion-free")
     }

@@ -116,6 +116,16 @@ public struct LayoutViolation: Sendable, Equatable {
 /// unambiguous geometric defects (a line through a box, overlapping boxes,
 /// clipped content); warnings are quality smells (colliding labels, crossings,
 /// cramped spacing).
+extension DiagramScene {
+    /// Real text metrics for scene label frames — the injected measurer at
+    /// the ~10.5pt label size the renderers use. Replaces the old
+    /// `count x 6` estimate, whose error let margin-of-error collisions
+    /// slip past every label check.
+    static func measuredLabelSize(_ measure: DiagramTextMeasurer, _ text: String) -> CGSize {
+        measure(text, 10.5)
+    }
+}
+
 public enum DiagramLayoutLinter {
 
     /// Runs every check and returns the deduplicated violations, in check order.

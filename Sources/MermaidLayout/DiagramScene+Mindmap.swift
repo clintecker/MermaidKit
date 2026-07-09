@@ -10,7 +10,7 @@ extension DiagramScene {
     /// from the parent's right-center to the child's left-center. A mindmap has
     /// no free-standing edge labels and no group containers, so `labels` is
     /// empty and nothing is marked `isContainer`.
-    static func from(_ layout: MindmapLayout) -> DiagramScene {
+    static func from(_ layout: MindmapLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         DiagramScene(
             name: "mindmap",
             size: layout.size,

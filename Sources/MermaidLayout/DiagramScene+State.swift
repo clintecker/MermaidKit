@@ -8,7 +8,7 @@ extension DiagramScene {
     /// are plain nodes, composite-state boxes are containers, transitions are
     /// edges (routed polyline, straight start→end fallback), and transition
     /// labels are free-standing at the route's arc-length midpoint.
-    static func from(_ layout: StateLayout) -> DiagramScene {
+    static func from(_ layout: StateLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         // Every simple/start/end/choice/fork/join node keeps its exact frame.
         // Layout already sizes point-like nodes (start/end dots, choice/fork/
         // join bars) into real rects, so no synthesis is needed here.
@@ -32,7 +32,7 @@ extension DiagramScene {
             guard let text = edge.label, !text.isEmpty else { return nil }
             let poly = edge.points.count >= 2 ? edge.points : [edge.start, edge.end]
             let mid = edge.labelAnchor ?? polylineMidpoint(poly)
-            let w = DiagramScene.estimatedLabelSize(text).width
+            let w = measuredLabelSize(measure, text).width
             return DiagramScene.Label(
                 text: text,
                 frame: CGRect(x: mid.x - w / 2, y: mid.y - 7, width: w, height: 14),
@@ -45,7 +45,7 @@ extension DiagramScene {
         // band; lower them so content can't overdraw a composite's name.
         let compositeTitles: [DiagramScene.Label] = layout.containers.compactMap { container in
             guard !container.label.isEmpty else { return nil }
-            let width = DiagramScene.estimatedLabelSize(container.label).width
+            let width = measuredLabelSize(measure, container.label).width
             return DiagramScene.Label(
                 text: container.label,
                 frame: CGRect(x: container.frame.midX - width / 2,

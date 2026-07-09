@@ -10,7 +10,7 @@ import CoreGraphics
 extension DiagramScene {
     /// Tree view: each row is a node (glyph through text), connectors are
     /// edges; descriptions are backed labels beside their row.
-    static func from(_ layout: TreeViewLayout) -> DiagramScene {
+    static func from(_ layout: TreeViewLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         var nodes: [Node] = []
         var labels: [Label] = []
         for (index, row) in layout.rows.enumerated() {
@@ -22,7 +22,7 @@ extension DiagramScene {
             }
             nodes.append(Node(id: "\(index):\(row.label)", frame: frame))
             if let description = row.description, let at = row.descriptionOrigin {
-                let w = DiagramScene.estimatedLabelSize(description).width
+                let w = measuredLabelSize(measure, description).width
                 labels.append(Label(
                     text: description,
                     frame: CGRect(x: at.x, y: at.y - 7, width: w, height: 14)))
@@ -35,7 +35,7 @@ extension DiagramScene {
 
     /// Venn: circles are containers (overlap is the point of the diagram);
     /// set and region labels are free-standing, chip-backed by the renderer.
-    static func from(_ layout: VennLayout) -> DiagramScene {
+    static func from(_ layout: VennLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         let nodes: [Node] = layout.circles.map { circle in
             Node(id: circle.id,
                  frame: CGRect(x: circle.center.x - circle.radius,
@@ -46,7 +46,7 @@ extension DiagramScene {
         var labels: [Label] = []
         for circle in layout.circles {
             guard let text = circle.label, !text.isEmpty else { continue }
-            let w = DiagramScene.estimatedLabelSize(text).width
+            let w = measuredLabelSize(measure, text).width
             labels.append(Label(
                 text: text,
                 frame: CGRect(x: circle.labelCenter.x - w / 2,
@@ -54,7 +54,7 @@ extension DiagramScene {
                 backed: true))
         }
         for region in layout.regionLabels {
-            let w = DiagramScene.estimatedLabelSize(region.text).width
+            let w = measuredLabelSize(measure, region.text).width
             labels.append(Label(
                 text: region.text,
                 frame: CGRect(x: region.center.x - w / 2,
@@ -66,7 +66,7 @@ extension DiagramScene {
 
     /// Cynefin: quadrants and the confusion disk are containers; items and
     /// transition labels are labels; transitions are edges.
-    static func from(_ layout: CynefinLayout) -> DiagramScene {
+    static func from(_ layout: CynefinLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         var nodes: [Node] = layout.quadrants.map {
             Node(id: $0.domain, frame: $0.frame, isContainer: true)
         }
@@ -76,12 +76,12 @@ extension DiagramScene {
         var labels: [Label] = []
         for quadrant in layout.quadrants {
             // Domain heading + heuristic subtitle, drawn inside the container.
-            let nameWidth = DiagramScene.estimatedLabelSize(quadrant.name).width
+            let nameWidth = measuredLabelSize(measure, quadrant.name).width
             labels.append(Label(
                 text: quadrant.name,
                 frame: CGRect(x: quadrant.frame.midX - nameWidth / 2,
                               y: quadrant.frame.minY + 11, width: nameWidth, height: 14)))
-            let heuristicWidth = DiagramScene.estimatedLabelSize(quadrant.heuristic).width
+            let heuristicWidth = measuredLabelSize(measure, quadrant.heuristic).width
             labels.append(Label(
                 text: quadrant.heuristic,
                 frame: CGRect(x: quadrant.frame.midX - heuristicWidth / 2,
@@ -89,7 +89,7 @@ extension DiagramScene {
         }
         for quadrant in layout.quadrants + (layout.center.map { [$0] } ?? []) {
             for item in quadrant.items {
-                let w = DiagramScene.estimatedLabelSize(item.text).width
+                let w = measuredLabelSize(measure, item.text).width
                 labels.append(Label(
                     text: item.text,
                     frame: CGRect(x: item.center.x - w / 2, y: item.center.y - 7,
@@ -100,7 +100,7 @@ extension DiagramScene {
         for (index, transition) in layout.transitions.enumerated() {
             edges.append(Edge(polyline: [transition.from, transition.to], label: transition.label))
             if let text = transition.label, !text.isEmpty {
-                let w = DiagramScene.estimatedLabelSize(text).width
+                let w = measuredLabelSize(measure, text).width
                 labels.append(Label(
                     text: text,
                     frame: CGRect(x: transition.labelCenter.x - w / 2,
@@ -115,7 +115,7 @@ extension DiagramScene {
     /// Wardley: the plot is a container, component dots are small nodes,
     /// links/evolves are edges, and every label is free-standing (the layout
     /// staggers them; the linter verifies it worked).
-    static func from(_ layout: WardleyLayout) -> DiagramScene {
+    static func from(_ layout: WardleyLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         var nodes: [Node] = [Node(id: "plot", frame: layout.plotFrame, isContainer: true)]
         var labels: [Label] = []
         for node in layout.nodes {
@@ -127,7 +127,7 @@ extension DiagramScene {
         var edges: [Edge] = layout.links.map { Edge(polyline: [$0.from, $0.to], label: nil) }
         edges.append(contentsOf: layout.evolves.map { Edge(polyline: [$0.from, $0.to], label: nil) })
         for note in layout.notes {
-            let w = DiagramScene.estimatedLabelSize(note.text).width
+            let w = measuredLabelSize(measure, note.text).width
             labels.append(Label(
                 text: note.text,
                 frame: CGRect(x: note.center.x - w / 2, y: note.center.y - 7,

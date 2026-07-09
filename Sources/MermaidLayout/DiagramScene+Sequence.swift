@@ -8,7 +8,7 @@ extension DiagramScene {
     /// boxes are the only nodes (lifelines are guides, not obstacles), each
     /// message is an edge along its row — self-messages as a right-side loop
     /// — and message text chips are free-standing labels.
-    static func from(_ layout: SequenceLayout) -> DiagramScene {
+    static func from(_ layout: SequenceLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         // Loop depth used to synthesize a polyline for a self-message, whose
         // layout stores only a single y and an outbound `toX`.
         let selfLoopHeight: CGFloat = 12
@@ -76,8 +76,8 @@ extension DiagramScene {
             labels: layout.arrows.enumerated().compactMap { index, arrow -> Label? in
                 guard !arrow.text.isEmpty else { return nil }
                 let lines = DiagramLayoutEngine.brLines(arrow.text)
-                let width = lines.map { DiagramScene.estimatedLabelSize($0).width }.max()
-                    ?? DiagramScene.estimatedLabelSize(arrow.text).width
+                let width = lines.map { measuredLabelSize(measure, $0).width }.max()
+                    ?? measuredLabelSize(measure, arrow.text).width
                 if arrow.isSelfMessage {
                     // Drawn right of the loop, centred at arrow.y + 6.
                     return Label(
@@ -102,7 +102,7 @@ extension DiagramScene {
                 // Autonumber chips: an opaque accent chip at the sender end.
                 guard let number = arrow.number else { return nil }
                 let text = "\(number)"
-                let width = DiagramScene.estimatedLabelSize(text).width + 8
+                let width = measuredLabelSize(measure, text).width + 8
                 let sign: CGFloat = arrow.toX >= arrow.fromX ? 1 : -1
                 let x = arrow.fromX + sign * 4 - (sign < 0 ? width : 0)
                 return Label(text: text,
@@ -113,14 +113,14 @@ extension DiagramScene {
                 // Kind tab + optional [guard] beside it, then each divider's
                 // canvas-chipped [label].
                 var out: [Label] = []
-                let kindWidth = DiagramScene.estimatedLabelSize(frame.kind).width
+                let kindWidth = measuredLabelSize(measure, frame.kind).width
                 out.append(Label(
                     text: frame.kind,
                     frame: CGRect(x: frame.rect.minX + 5, y: frame.rect.minY + 1,
                                   width: kindWidth, height: 13)))
                 if let guardText = frame.label, !guardText.isEmpty {
                     let text = "[\(guardText)]"
-                    let width = DiagramScene.estimatedLabelSize(text).width
+                    let width = measuredLabelSize(measure, text).width
                     out.append(Label(
                         text: text,
                         frame: CGRect(x: frame.rect.minX + kindWidth + 20,
@@ -129,7 +129,7 @@ extension DiagramScene {
                 for divider in frame.dividers {
                     guard let label = divider.label, !label.isEmpty else { continue }
                     let text = "[\(label)]"
-                    let width = DiagramScene.estimatedLabelSize(text).width + 6
+                    let width = measuredLabelSize(measure, text).width + 6
                     out.append(Label(
                         text: text,
                         frame: CGRect(x: frame.rect.midX - width / 2, y: divider.y - 7,
@@ -139,7 +139,7 @@ extension DiagramScene {
                 return out
             } + layout.boxBands.compactMap { band -> Label? in
                 guard let text = band.label, !text.isEmpty else { return nil }
-                let width = DiagramScene.estimatedLabelSize(text).width
+                let width = measuredLabelSize(measure, text).width
                 return Label(
                     text: text,
                     frame: CGRect(x: band.rect.midX - width / 2, y: band.rect.minY + 2,

@@ -11,7 +11,7 @@ extension DiagramScene {
     /// since every wedge shares the disk's bounding box). The free-standing
     /// labels that can actually collide are the title and the stacked legend
     /// rows (swatch + "Label (NN%)" chip), so those are the `labels`.
-    static func from(_ layout: PieLayout) -> DiagramScene {
+    static func from(_ layout: PieLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         // The pie disk: a container (exempt from overlap/occlusion) sized to
         // the circle's bounding box around `center` with `radius`.
         let disk = Node(
@@ -47,7 +47,7 @@ extension DiagramScene {
         for slice in layout.slices {
             let percent = slice.fraction.isFinite ? Int((slice.fraction * 100).rounded()) : 0
             let text = "\(slice.label) (\(percent)%)"
-            let textWidth = DiagramScene.estimatedLabelSize(text).width
+            let textWidth = measuredLabelSize(measure, text).width
             labels.append(Label(
                 text: text,
                 frame: CGRect(

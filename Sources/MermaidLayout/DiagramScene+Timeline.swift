@@ -17,7 +17,7 @@ extension DiagramScene {
     ///   - section names       → free-standing Labels (header strip)
     /// There are no connectors between distinct nodes (the spine is decorative
     /// chrome, not an edge between two nodes), so `edges` is empty.
-    static func from(_ layout: TimelineLayout) -> DiagramScene {
+    static func from(_ layout: TimelineLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         var nodes: [DiagramScene.Node] = []
         var labels: [DiagramScene.Label] = []
 
@@ -31,7 +31,7 @@ extension DiagramScene {
             ))
             // The section name sits in the reserved header strip along the top
             // edge of the band, left-aligned at the band's left inset.
-            let w = DiagramScene.estimatedLabelSize(section.name).width
+            let w = measuredLabelSize(measure, section.name).width
             labels.append(DiagramScene.Label(
                 text: section.name,
                 frame: CGRect(x: section.frame.minX + 6,
@@ -54,7 +54,7 @@ extension DiagramScene {
 
             // Period label: right-aligned, its right edge at labelPoint.x,
             // vertically centred on labelPoint.y.
-            let w = DiagramScene.estimatedLabelSize(period.label).width
+            let w = measuredLabelSize(measure, period.label).width
             labels.append(DiagramScene.Label(
                 text: period.label,
                 frame: CGRect(x: period.labelPoint.x - w,

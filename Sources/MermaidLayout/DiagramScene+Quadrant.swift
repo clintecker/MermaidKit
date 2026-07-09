@@ -8,7 +8,7 @@ extension DiagramScene {
     /// four tint quarters are containers, each data dot is a small node, and
     /// point, quadrant, and axis captions are free-standing labels (y-axis
     /// labels as rotated tall-narrow boxes). No connectors, so `edges` is empty.
-    static func from(_ layout: QuadrantLayout) -> DiagramScene {
+    static func from(_ layout: QuadrantLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         var nodes: [Node] = []
 
         // The plot square and the four tint quarters legitimately contain the
@@ -32,11 +32,11 @@ extension DiagramScene {
         // label, the quadrant names, and the axis-end labels.
         var labels: [Label] = []
         func leftAnchored(_ text: String, at anchor: CGPoint) -> Label {
-            let w = DiagramScene.estimatedLabelSize(text).width
+            let w = measuredLabelSize(measure, text).width
             return Label(text: text, frame: CGRect(x: anchor.x, y: anchor.y - 7, width: w, height: 14))
         }
         func centered(_ text: String, at c: CGPoint) -> Label {
-            let w = DiagramScene.estimatedLabelSize(text).width
+            let w = measuredLabelSize(measure, text).width
             return Label(text: text, frame: CGRect(x: c.x - w / 2, y: c.y - 7, width: w, height: 14))
         }
         // y-axis labels are painted rotated 90° in the narrow left gutter, so
@@ -44,7 +44,7 @@ extension DiagramScene {
         // text length) — lowering them as horizontal boxes made them spill off
         // the left edge of the canvas.
         func rotatedCentered(_ text: String, at c: CGPoint) -> Label {
-            let h = DiagramScene.estimatedLabelSize(text).width
+            let h = measuredLabelSize(measure, text).width
             return Label(text: text, frame: CGRect(x: c.x - 7, y: c.y - h / 2, width: 14, height: h))
         }
 

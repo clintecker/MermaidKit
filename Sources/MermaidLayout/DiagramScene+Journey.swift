@@ -8,7 +8,7 @@ extension DiagramScene {
     /// bands are containers, each task's score badge is a small node, and
     /// section names, task labels, and actor lists are free-standing labels.
     /// A journey has no connectors, so `edges` is empty.
-    static func from(_ layout: JourneyLayout) -> DiagramScene {
+    static func from(_ layout: JourneyLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         var nodes: [Node] = []
         var labels: [Label] = []
 
@@ -22,7 +22,7 @@ extension DiagramScene {
                 text: band.name,
                 frame: CGRect(x: band.frame.minX + 8,
                               y: band.frame.minY + 4,
-                              width: DiagramScene.estimatedLabelSize(band.name).width,
+                              width: measuredLabelSize(measure, band.name).width,
                               height: 14)
             ))
         }
@@ -44,7 +44,7 @@ extension DiagramScene {
                 text: task.label,
                 frame: CGRect(x: task.labelPoint.x,
                               y: task.labelPoint.y - 7,
-                              width: DiagramScene.estimatedLabelSize(task.label).width,
+                              width: measuredLabelSize(measure, task.label).width,
                               height: 14)
             ))
 
@@ -54,7 +54,7 @@ extension DiagramScene {
                     text: task.actors,
                     frame: CGRect(x: task.actorsPoint.x,
                                   y: task.actorsPoint.y - 7,
-                                  width: DiagramScene.estimatedLabelSize(task.actors).width,
+                                  width: measuredLabelSize(measure, task.actors).width,
                                   height: 14)
                 ))
             }

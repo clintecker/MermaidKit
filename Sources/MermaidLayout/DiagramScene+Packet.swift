@@ -10,7 +10,7 @@ extension DiagramScene {
     /// bit range. Packet diagrams have no connectors, and every segment's label
     /// is centred inside its own box (implicit in the Node), so there are no
     /// free-standing edges or labels.
-    static func from(_ layout: PacketLayout) -> DiagramScene {
+    static func from(_ layout: PacketLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         DiagramScene(
             name: "packet",
             size: layout.size,

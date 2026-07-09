@@ -28,6 +28,17 @@ extension DiagramRenderer {
     }
 
     /// Draws text centered on `center` in a flipped (y-down) context.
+    #if DEBUG
+    /// Test-only: receives every text rect drawText paints, in layout
+    /// coordinates (the CTM applies canvas translation after the fact).
+    /// The draw-vs-scene conformance test uses it to prove that everything
+    /// the renderer draws is visible to the geometry linter.
+    nonisolated(unsafe) static var textCaptureHook: ((String, CGRect) -> Void)?
+    /// Suspends capture inside rotated CTMs, where the argument-space rect
+    /// would be meaningless.
+    nonisolated(unsafe) static var textCaptureSuspended = false
+    #endif
+
     static func drawText(
         _ text: String,
         center: CGPoint,
@@ -37,6 +48,14 @@ extension DiagramRenderer {
         in context: CGContext
     ) {
         guard !text.isEmpty else { return }
+        #if DEBUG
+        if let hook = textCaptureHook, !textCaptureSuspended {
+            let measured = measure(text, size: size, weight: weight)
+            hook(text, CGRect(x: center.x - measured.width / 2,
+                              y: center.y - measured.height / 2,
+                              width: measured.width, height: measured.height))
+        }
+        #endif
         let attributed = NSAttributedString(string: text, attributes: [
             kCTFontAttributeName as NSAttributedString.Key: font(size, weight: weight),
             kCTForegroundColorFromContextAttributeName as NSAttributedString.Key: true,
@@ -96,6 +115,10 @@ extension DiagramRenderer {
         weight: PlatformFont.Weight = .regular, color: PlatformColor, in context: CGContext
     ) {
         guard !text.isEmpty else { return }
+        #if DEBUG
+        textCaptureSuspended = true
+        defer { textCaptureSuspended = false }
+        #endif
         context.saveGState()
         context.translateBy(x: center.x, y: center.y)
         context.rotate(by: -.pi / 2)

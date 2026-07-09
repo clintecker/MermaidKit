@@ -8,10 +8,10 @@ extension DiagramScene {
     /// bars are containers (a line series legitimately overlays a bar), line
     /// series are edges, and tick/category captions plus axis titles are
     /// free-standing labels (the y-axis title as a rotated vertical strip).
-    static func from(_ layout: XYChartLayout) -> DiagramScene {
+    static func from(_ layout: XYChartLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         // A synthesized frame for a label stored only as a center point.
         func labelFrame(_ text: String, _ center: CGPoint) -> CGRect {
-            let w = DiagramScene.estimatedLabelSize(text).width
+            let w = measuredLabelSize(measure, text).width
             return CGRect(x: center.x - w / 2, y: center.y - 7, width: w, height: 14)
         }
         // The y-axis title is drawn rotated 90° about its center, so its
@@ -19,7 +19,7 @@ extension DiagramScene {
         // line height is the width. Lowering it as a horizontal box would fake
         // a wide frame spilling off the left edge that is never actually drawn.
         func rotatedLabelFrame(_ text: String, _ center: CGPoint) -> CGRect {
-            let len = DiagramScene.estimatedLabelSize(text).width
+            let len = measuredLabelSize(measure, text).width
             return CGRect(x: center.x - 7, y: center.y - len / 2, width: 14, height: len)
         }
 

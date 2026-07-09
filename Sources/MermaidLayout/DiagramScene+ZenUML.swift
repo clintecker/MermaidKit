@@ -8,7 +8,7 @@ extension DiagramScene {
     /// are the only nodes (lifelines are guides), each message is an edge
     /// along its row — self-calls as a right-side loop — and message text
     /// chips are free-standing labels.
-    static func from(_ layout: ZenUMLLayout) -> DiagramScene {
+    static func from(_ layout: ZenUMLLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         DiagramScene(
             name: "zenuml",
             size: layout.size,
@@ -53,7 +53,7 @@ extension DiagramScene {
             // inside the head box (node-internal), so neither is listed here.
             labels: layout.arrows.enumerated().compactMap { index, arrow -> Label? in
                 guard !arrow.label.isEmpty else { return nil }
-                let width = DiagramScene.estimatedLabelSize(arrow.label).width
+                let width = measuredLabelSize(measure, arrow.label).width
                 if arrow.isSelf {
                     return Label(
                         text: arrow.label,

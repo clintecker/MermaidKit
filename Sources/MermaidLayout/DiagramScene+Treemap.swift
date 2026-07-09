@@ -7,7 +7,7 @@ extension DiagramScene {
     /// Lowers a treemap to the common scene IR: leaf cells are plain nodes,
     /// internal group rects are containers, and ids are disambiguated by
     /// depth and position. No edges and no free-standing labels.
-    static func from(_ layout: TreemapLayout) -> DiagramScene {
+    static func from(_ layout: TreemapLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         DiagramScene(
             name: "treemap",
             size: layout.size,
@@ -30,7 +30,7 @@ extension DiagramScene {
             // (mirrors the renderer's roominess + fits-width guards).
             labels: layout.cells.compactMap { cell in
                 guard !cell.isLeaf, cell.frame.height > 44, cell.frame.width > 40 else { return nil }
-                let width = DiagramScene.estimatedLabelSize(cell.label).width
+                let width = measuredLabelSize(measure, cell.label).width
                 guard width <= cell.frame.width - 12 else { return nil }
                 return Label(
                     text: cell.label,

@@ -7,7 +7,7 @@ extension DiagramScene {
     /// Lowers a block diagram to the common scene IR: every cell is a plain
     /// node, edges keep their routes, and each edge caption becomes a
     /// free-standing Label at the route's arc-length midpoint.
-    static func from(_ layout: BlockLayout) -> DiagramScene {
+    static func from(_ layout: BlockLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         DiagramScene(
             name: "block",
             size: layout.size,
@@ -27,7 +27,7 @@ extension DiagramScene {
                 // route — lowering it bare with no anchorEdge guaranteed a
                 // false-positive edge-cuts-label on every labeled edge.
                 let center = polylineMidpoint(edge.points)
-                let width = DiagramScene.estimatedLabelSize(text).width
+                let width = measuredLabelSize(measure, text).width
                 return Label(
                     text: text,
                     frame: CGRect(x: center.x - width / 2, y: center.y - 7,

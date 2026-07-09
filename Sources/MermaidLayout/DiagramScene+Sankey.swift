@@ -7,7 +7,7 @@ extension DiagramScene {
     /// Lowers a sankey layout to the common scene IR: each flow bar is a
     /// plain node, each link is an edge along its routed centerline, and bar
     /// captions (drawn outboard of their bars) are free-standing labels.
-    static func from(_ layout: SankeyLayout) -> DiagramScene {
+    static func from(_ layout: SankeyLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         DiagramScene(
             name: "sankey",
             size: layout.size,
@@ -25,7 +25,7 @@ extension DiagramScene {
             // Node labels sit outboard of their bars (not centered on them), so
             // they are free-standing and can collide with neighbouring columns.
             labels: layout.nodes.map { node in
-                let w = DiagramScene.estimatedLabelSize(node.label).width
+                let w = measuredLabelSize(measure, node.label).width
                 return Label(
                     text: node.label,
                     frame: CGRect(

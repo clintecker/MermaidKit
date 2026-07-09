@@ -10,7 +10,7 @@ extension DiagramScene {
     /// routed polylines that thread the empty channels between rows; each label
     /// is free-standing at a point on its route that sits in a clear channel
     /// band, clamped to stay on-canvas.
-    static func from(_ layout: C4Layout) -> DiagramScene {
+    static func from(_ layout: C4Layout, measure: DiagramTextMeasurer) -> DiagramScene {
         DiagramScene(
             name: "c4",
             size: layout.size,
@@ -24,7 +24,7 @@ extension DiagramScene {
             },
             labels: layout.edges.enumerated().compactMap { index, edge -> Label? in
                 guard let text = edge.label, !text.isEmpty else { return nil }
-                let w = DiagramScene.estimatedLabelSize(text).width
+                let w = measuredLabelSize(measure, text).width
                 let half = w / 2
                 // The label point lives in an empty channel band, so clamping x
                 // to the canvas can never push it onto a box.

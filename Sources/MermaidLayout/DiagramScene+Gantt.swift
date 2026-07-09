@@ -15,7 +15,7 @@ extension DiagramScene {
     ///   ticks are axis gridlines, not routed edges, so their vertical rules are
     ///   deliberately NOT lowered as edges (that would spuriously "occlude"
     ///   every bar). Each tick's day-index caption is a free-standing axis label.
-    static func from(_ layout: GanttLayout) -> DiagramScene {
+    static func from(_ layout: GanttLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         var nodes: [Node] = []
 
         // Section bands first so they read as the backing containers.
@@ -30,7 +30,7 @@ extension DiagramScene {
 
         // Day-axis tick captions: free-standing labels sitting under the chart.
         let labels: [Label] = layout.ticks.map { tick in
-            let w = DiagramScene.estimatedLabelSize(tick.label).width
+            let w = measuredLabelSize(measure, tick.label).width
             return Label(
                 text: tick.label,
                 frame: CGRect(x: tick.x - w / 2, y: tick.bottom + 2, width: w, height: 14)

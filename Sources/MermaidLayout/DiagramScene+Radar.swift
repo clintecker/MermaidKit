@@ -12,7 +12,7 @@ extension DiagramScene {
     /// legitimately cross and coincide at axis vertices). The free-standing
     /// labels that can actually collide are the title, the outward spoke/axis
     /// labels, and the stacked legend rows, so those are the `labels`.
-    static func from(_ layout: RadarLayout) -> DiagramScene {
+    static func from(_ layout: RadarLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         // The plot disk: a container (exempt from overlap/occlusion) sized to
         // the full-radius circle. Derive the radius from the longest spoke
         // (spoke ends sit at fraction 1); fall back to the outer ring.
@@ -53,7 +53,7 @@ extension DiagramScene {
 
         // Outward axis labels, one per spoke. `labelPoint` is the label centre.
         for spoke in layout.spokes {
-            let w = DiagramScene.estimatedLabelSize(spoke.label).width
+            let w = measuredLabelSize(measure, spoke.label).width
             labels.append(Label(
                 text: spoke.label,
                 frame: CGRect(
@@ -68,7 +68,7 @@ extension DiagramScene {
         // Legend rows below the chart: a swatch followed by the curve label.
         // `labelPoint` is the text's left edge; `swatchCenter` sits to its left.
         for entry in layout.legend {
-            let textWidth = DiagramScene.estimatedLabelSize(entry.label).width
+            let textWidth = measuredLabelSize(measure, entry.label).width
             let left = entry.swatchCenter.x - 5
             let right = entry.labelPoint.x + textWidth
             labels.append(Label(

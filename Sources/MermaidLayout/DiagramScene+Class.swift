@@ -13,7 +13,7 @@ extension DiagramScene {
     /// their orthogonal route; a relation's multiplicity/role label is a
     /// free-standing `Label` pinned to the route's midpoint so the linter can
     /// catch it colliding with a box or another label.
-    static func from(_ layout: ClassLayout) -> DiagramScene {
+    static func from(_ layout: ClassLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         let nodes = layout.boxes.map { box in
             Node(id: box.name, frame: box.frame, isContainer: false)
         }
@@ -25,7 +25,7 @@ extension DiagramScene {
         let labels: [Label] = layout.edges.enumerated().compactMap { index, edge in
             guard let text = edge.label, !text.isEmpty else { return nil }
             let center = edge.labelAnchor ?? polylineMidpoint(edge.points)
-            let w = DiagramScene.estimatedLabelSize(text).width
+            let w = measuredLabelSize(measure, text).width
             return Label(
                 text: text,
                 frame: CGRect(x: center.x - w / 2, y: center.y - 7, width: w, height: 14),

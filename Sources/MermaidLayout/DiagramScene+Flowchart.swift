@@ -8,7 +8,7 @@ extension DiagramScene {
     /// a plain node (subgraphs are flattened by the parser), connectors keep
     /// their orthogonal routes, and each |label| becomes a free-standing
     /// Label at the layout's labelPoint (endpoint midpoint fallback).
-    static func from(_ layout: FlowchartLayout) -> DiagramScene {
+    static func from(_ layout: FlowchartLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         DiagramScene(
             name: "flowchart",
             size: layout.size,
@@ -32,7 +32,7 @@ extension DiagramScene {
                     x: (edge.start.x + edge.end.x) / 2,
                     y: (edge.start.y + edge.end.y) / 2
                 )
-                let width = DiagramScene.estimatedLabelSize(text).width
+                let width = measuredLabelSize(measure, text).width
                 return Label(
                     text: text,
                     frame: CGRect(x: center.x - width / 2, y: center.y - 7,

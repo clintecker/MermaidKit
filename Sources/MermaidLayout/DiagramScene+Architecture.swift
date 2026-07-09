@@ -7,7 +7,7 @@ extension DiagramScene {
     /// Lowers an architecture layout to the common scene IR: group tint bands
     /// are containers, services and junction dots are plain nodes, and edges
     /// are unlabeled orthogonal wires.
-    static func from(_ layout: ArchitectureLayout) -> DiagramScene {
+    static func from(_ layout: ArchitectureLayout, measure: DiagramTextMeasurer) -> DiagramScene {
         var nodes: [DiagramScene.Node] = []
 
         // Tinted group containers legitimately hold their member services, so
@@ -37,7 +37,7 @@ extension DiagramScene {
         let labels: [DiagramScene.Label] = layout.groups.compactMap { group in
             guard !group.label.isEmpty else { return nil }
             let iconOffset: CGFloat = group.icon.isEmpty ? 0 : 14
-            let width = DiagramScene.estimatedLabelSize(group.label).width
+            let width = measuredLabelSize(measure, group.label).width
             return DiagramScene.Label(
                 text: group.label,
                 frame: CGRect(x: group.titleOrigin.x + iconOffset,
