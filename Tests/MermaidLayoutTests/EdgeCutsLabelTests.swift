@@ -53,3 +53,22 @@ final class EdgeCutsLabelTests: XCTestCase {
                       "a border graze must not fire; only real traversals")
     }
 }
+
+extension EdgeCutsLabelTests {
+    /// A chip keeps text readable, but a line vanishing under it is still a
+    /// placement smell: WARNING, not silence. (The old full exemption let a
+    /// wardley layout stamp labels straight onto its links, unflagged.)
+    func testBackedLabelUnderForeignEdgeWarns() {
+        let scene = DiagramScene(
+            name: "synthetic", size: CGSize(width: 200, height: 100),
+            nodes: [],
+            edges: [.init(polyline: [CGPoint(x: 20, y: 50), CGPoint(x: 180, y: 50)], label: nil)],
+            labels: [.init(text: "on a chip", frame: CGRect(x: 70, y: 43, width: 60, height: 14),
+                           backed: true)])
+        let hits = DiagramLayoutLinter.lint(scene).filter { $0.kind == "edge-under-label" }
+        XCTAssertEqual(hits.count, 1)
+        XCTAssertEqual(hits.first?.severity, .warning)
+        XCTAssertTrue(DiagramLayoutLinter.lint(scene).filter { $0.kind == "edge-cuts-label" }.isEmpty,
+                      "backed downgrades, it doesn't double-report")
+    }
+}

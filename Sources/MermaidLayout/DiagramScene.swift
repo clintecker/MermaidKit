@@ -58,8 +58,9 @@ public struct DiagramScene: Sendable, Codable {
         public let anchorEdge: Int?
         /// True when the renderer paints an opaque canvas chip behind this
         /// label. A foreign edge passing under a backed label is interrupted
-        /// by the chip and the text stays readable (standard Mermaid
-        /// convention), so backed labels are exempt from `edge-cuts-label`.
+        /// by the chip and the text stays readable — so the linter downgrades
+        /// the finding from the `edge-cuts-label` ERROR to the
+        /// `edge-under-label` WARNING (still sloppy, no longer invisible).
         public let backed: Bool
         /// Creates a label; pass `anchorEdge` when it annotates an edge and
         /// `backed` when it is drawn on an opaque chip.
@@ -131,8 +132,9 @@ public enum DiagramLayoutLinter {
     ///   canvas (a chart plot), an edge vertex lies more than 2pt outside it.
     /// - `edge-cuts-label`: an edge travels >6pt inside a BARE label's text
     ///   frame. A label's own `anchorEdge` is exempt (edge labels sit on
-    ///   their route by design), as are `backed` labels (their opaque chip
-    ///   interrupts the line; the text stays readable).
+    ///   their route by design). `backed` labels downgrade to the
+    ///   `edge-under-label` WARNING instead — the chip keeps text readable,
+    ///   but a line vanishing under a chip is still placement worth fixing.
     ///
     /// Warnings:
     /// - `labels-overlap`: two labels share more than 4pt² of area.
@@ -224,13 +226,22 @@ public enum DiagramLayoutLinter {
         //     Same inside-length measure as edge-occludes-node, scaled to
         //     label size: flag when a wire travels more than 6pt inside the
         //     slightly-inset text frame.
-        for (li, label) in scene.labels.enumerated() where !label.backed {
+        for (li, label) in scene.labels.enumerated() {
             let inner = label.frame.insetBy(dx: 2, dy: 2)
             guard inner.width > 0, inner.height > 0 else { continue }
             for (ei, edge) in scene.edges.enumerated() where ei != label.anchorEdge {
                 let segs = Array(zip(edge.polyline, edge.polyline.dropFirst()))
                 let insideLength = segs.reduce(CGFloat(0)) { $0 + segmentInsideLength($1.0, $1.1, inner) }
-                if insideLength > 6 {
+                guard insideLength > 6 else { continue }
+                if label.backed {
+                    // The chip keeps the text readable, so this isn't a hard
+                    // failure — but a line disappearing under a chip is still
+                    // sloppy placement worth surfacing. (This used to be a
+                    // full exemption, which silently blessed a wardley layout
+                    // that stamped labels straight onto its links.)
+                    out.append(.init(.warning, "edge-under-label",
+                        "edge #\(ei) passes under backed label \"\(scene.labels[li].text)\" (\(Int(insideLength))pt)"))
+                } else {
                     out.append(.init(.error, "edge-cuts-label",
                         "edge #\(ei) cuts through label \"\(scene.labels[li].text)\" (\(Int(insideLength))pt inside)"))
                 }
