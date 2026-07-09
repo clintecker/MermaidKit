@@ -60,10 +60,33 @@ public struct FlowchartLayout: Sendable {
         }
     }
 
+    /// A laid-out subgraph grouping box: a labeled rectangle enclosing its
+    /// members (and any nested containers). Drawn behind the nodes; `depth` is
+    /// the nesting level (0 = outermost) so the renderer can tint by depth.
+    public struct Container: Sendable {
+        public let id: String
+        public let label: String
+        public let frame: CGRect
+        public let depth: Int
+        public init(id: String, label: String, frame: CGRect, depth: Int) {
+            self.id = id; self.label = label; self.frame = frame; self.depth = depth
+        }
+    }
+
     /// Canvas the whole layout fits in.
     public let size: CGSize
     public let nodes: [PlacedNode]
     public let edges: [PlacedEdge]
+    /// Subgraph boxes, outermost first; empty for a flat chart.
+    public let containers: [Container]
+
+    public init(size: CGSize, nodes: [PlacedNode], edges: [PlacedEdge],
+                containers: [Container] = []) {
+        self.size = size
+        self.nodes = nodes
+        self.edges = edges
+        self.containers = containers
+    }
 }
 
 /// Placed sequence diagram: participant head boxes across the top, lifelines

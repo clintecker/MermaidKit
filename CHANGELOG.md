@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.9.0
+
+Flowchart subgraphs render as group boxes — the first of the audit's
+"big-four structural gaps." Previously `subgraph id[Label] … end` flattened:
+members drew, but the labeled group box was lost and any edge targeting a
+subgraph id minted a phantom node.
+
+- `subgraph id[Label] … end` now draws a labeled rounded box around its
+  members. Nesting is arbitrary (a box inside a box), and an inner
+  `direction LR/TB` reorients that group's interior independently.
+- Membership follows mermaid: the first subgraph block a node textually
+  appears in claims it (an inside reference wins over an earlier outside
+  one; an inner block wins over its outer).
+- An edge whose endpoint names a subgraph id (`Z --> GroupID`) now resolves
+  to that group's box border instead of fabricating a phantom node.
+- Layout is recursive: each group's interior is laid out as its own
+  flowchart and placed as one sized rectangle by the parent's layered pass,
+  so group boxes never overlap non-members (the geometry linter stays
+  clean). Inter-group edges terminate on the box border. A group's box
+  lowers to the scene as a container; its header lowers as a checked label.
+
+Clustering also tightened member placement: the self-referential flowchart
+fixture's total edge length fell from 3335 to 2808.
+
 ## 0.8.0
 
 Sequence lifecycle and typography — the remaining Tier-1 items, validated

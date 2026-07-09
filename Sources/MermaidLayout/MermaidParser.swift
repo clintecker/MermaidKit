@@ -246,6 +246,16 @@ public enum MermaidParser {
         var order: [String] = []
         var edges: [Flowchart.Edge] = []
 
+        // Subgraph nesting: a stack of open subgraph ids, plus the accumulated
+        // definitions. Membership is recorded when a node is FIRST noted while
+        // a subgraph is open, so a node belongs to the innermost block it
+        // appears in — matching mermaid.
+        var subgraphs: [String: Flowchart.Subgraph] = [:]
+        var subgraphOrder: [String] = []
+        var stack: [String] = []
+        var membership: [String: String] = [:]
+        var anonCount = 0
+
         func note(_ node: Flowchart.Node) {
             if let existing = nodes[node.id] {
                 // A later declaration with an explicit label wins over a bare id.
@@ -256,10 +266,37 @@ public enum MermaidParser {
                 nodes[node.id] = node
                 order.append(node.id)
             }
+            // Membership: the first subgraph block a node textually appears in
+            // claims it (an inside reference wins over an earlier outside one;
+            // an inner block wins over its outer). Nodes only ever seen at the
+            // top level stay unclaimed.
+            if let top = stack.last, subgraphs[top] != nil, membership[node.id] == nil {
+                membership[node.id] = top
+                subgraphs[top]!.nodeIDs.append(node.id)
+            }
         }
 
         for line in body {
-            if line.hasPrefix("subgraph") || line == "end" { continue } // v1: flatten
+            if line.hasPrefix("subgraph") {
+                let id = openSubgraph(line, into: &subgraphs, order: &subgraphOrder,
+                                      stack: stack, anonCount: &anonCount)
+                if let parent = stack.last, subgraphs[parent] != nil {
+                    subgraphs[parent]!.childIDs.append(id)
+                }
+                stack.append(id)
+                continue
+            }
+            if line == "end" { if !stack.isEmpty { stack.removeLast() }; continue }
+            if line.hasPrefix("direction ") {
+                // Scoped to the innermost open subgraph. A top-level direction
+                // line is dropped (the header token already set the chart's
+                // flow); either way it never leaks in as a phantom node.
+                if let top = stack.last, subgraphs[top] != nil {
+                    subgraphs[top]!.direction = Flowchart.Direction(
+                        rawValue: normalizedDirectionToken(line.dropFirst("direction".count)))
+                }
+                continue
+            }
             if line.hasPrefix("classDef") || line.hasPrefix("class ") || line.hasPrefix("style") { continue }
 
             // Split on edge connectors, keeping the connector kind.
@@ -279,12 +316,65 @@ public enum MermaidParser {
             }
         }
 
+        // An edge endpoint naming a subgraph id minted a phantom node above;
+        // drop those — the layout resolves the id to the group's box. Also
+        // scrub them from any membership list they slipped into.
+        let subgraphIDs = Set(subgraphOrder)
+        for id in subgraphIDs {
+            nodes.removeValue(forKey: id)
+            order.removeAll { $0 == id }
+        }
+        for key in subgraphs.keys {
+            subgraphs[key]!.nodeIDs.removeAll { subgraphIDs.contains($0) }
+        }
+
         guard !nodes.isEmpty else { return nil }
         return Flowchart(
             direction: direction,
             nodes: order.compactMap { nodes[$0] },
-            edges: edges
+            edges: edges,
+            subgraphs: subgraphOrder.compactMap { subgraphs[$0] }
         )
+    }
+
+    /// Normalizes a `direction` token (`TB` is mermaid's alias for `TD`).
+    private static func normalizedDirectionToken(_ raw: Substring) -> String {
+        let t = raw.trimmingCharacters(in: .whitespaces).uppercased()
+        return t == "TB" ? "TD" : t
+    }
+
+    /// Parses a `subgraph …` header into a fresh subgraph definition and
+    /// registers it. Accepts `subgraph id[Label]`, `subgraph id`, a bare
+    /// `subgraph "Title"`, and an anonymous `subgraph` (synthesized id).
+    private static func openSubgraph(
+        _ line: String,
+        into subgraphs: inout [String: Flowchart.Subgraph],
+        order: inout [String],
+        stack: [String],
+        anonCount: inout Int
+    ) -> String {
+        let rest = String(line.dropFirst("subgraph".count)).trimmingCharacters(in: .whitespaces)
+        var id: String
+        var label: String
+        if rest.isEmpty {
+            id = "\u{a7}sub\(anonCount)"; anonCount += 1
+            label = ""
+        } else if let open = rest.firstIndex(of: "["), let close = rest.lastIndex(of: "]"), open < close {
+            id = String(rest[..<open]).trimmingCharacters(in: .whitespaces)
+            label = String(rest[rest.index(after: open)..<close])
+                .trimmingCharacters(in: CharacterSet(charactersIn: "\" "))
+            if id.isEmpty { id = "\u{a7}sub\(anonCount)"; anonCount += 1 }
+        } else if rest.hasPrefix("\"") {
+            label = rest.trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            id = "\u{a7}sub\(anonCount)"; anonCount += 1
+        } else {
+            id = rest; label = rest
+        }
+        // Guard against a duplicate/reused id clobbering an open block.
+        if subgraphs[id] != nil { id = "\u{a7}sub\(anonCount)"; anonCount += 1 }
+        subgraphs[id] = Flowchart.Subgraph(id: id, label: label)
+        order.append(id)
+        return id
     }
 
     private struct ParsedEdge {

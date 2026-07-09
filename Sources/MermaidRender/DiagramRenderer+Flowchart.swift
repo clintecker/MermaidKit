@@ -16,6 +16,29 @@ extension DiagramRenderer {
         let stroke = theme.ink.withAlphaComponent(0.35)
         let fill = theme.accent.withAlphaComponent(0.06)
 
+        // Subgraph group boxes first — backdrops behind every wire and node.
+        // A deeper box is tinted a touch stronger so nested groups read apart.
+        for container in layout.containers.sorted(by: { $0.depth < $1.depth }) {
+            let boxFill = theme.ink.withAlphaComponent(0.04 + 0.03 * CGFloat(min(container.depth, 3)))
+            let boxStroke = theme.ink.withAlphaComponent(0.28)
+            let path = CGPath(roundedRect: container.frame, cornerWidth: 6, cornerHeight: 6, transform: nil)
+            context.saveGState()
+            context.addPath(path)
+            context.setFillColor(resolvedCGColor(boxFill))
+            context.fillPath()
+            context.addPath(path)
+            context.setStrokeColor(resolvedCGColor(boxStroke))
+            context.setLineWidth(1)
+            context.strokePath()
+            context.restoreGState()
+            if !container.label.isEmpty {
+                drawText(container.label,
+                         center: CGPoint(x: container.frame.midX, y: container.frame.minY + 11),
+                         size: 11, weight: .semibold,
+                         color: theme.ink.withAlphaComponent(0.75), in: context)
+            }
+        }
+
         // Batch edge shafts by dash style and stroke each group in a single
         // pass, so crossing edges composite as one region instead of stacking
         // their translucent strokes into darker seams. Arrowheads and labels

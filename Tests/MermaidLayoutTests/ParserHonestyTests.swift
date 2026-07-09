@@ -1,4 +1,5 @@
 import XCTest
+import CoreGraphics
 @testable import MermaidLayout
 
 /// The honesty sprint's contract: syntax that used to be silently dropped or
@@ -72,6 +73,97 @@ final class ParserHonestyTests: XCTestCase {
     func testEdgeIDDropped() throws {
         let c = try flow("A e1@--> B")
         XCTAssertEqual(c.edges.count, 1, "edge id must not kill the line")
+    }
+
+    // MARK: flowchart subgraphs
+
+    /// Deterministic fake measurer for the layout-geometry assertions below.
+    private let measure: DiagramTextMeasurer = { t, s in
+        CGSize(width: CGFloat(max(t.count, 1)) * s * 0.6, height: s + 4)
+    }
+
+    func testSubgraphIsGroupedNotFlattened() throws {
+        let c = try flow("""
+            A --> B
+            subgraph G [Group]
+              B --> C
+              C --> D
+            end
+            D --> E
+            """)
+        XCTAssertEqual(c.subgraphs.count, 1)
+        let g = try XCTUnwrap(c.subgraphs.first)
+        XCTAssertEqual(g.id, "G")
+        XCTAssertEqual(g.label, "Group")
+        // B, C, D first appear inside the block → members; A and E do not.
+        XCTAssertEqual(g.nodeIDs, ["B", "C", "D"])
+        // A group box is laid out that contains exactly its members.
+        let layout = DiagramLayoutEngine.layout(c, measure: measure)
+        XCTAssertEqual(layout.containers.count, 1)
+        let box = try XCTUnwrap(layout.containers.first).frame.insetBy(dx: -1, dy: -1)
+        let inside = Set(layout.nodes.filter { box.contains($0.frame) }.map(\.id))
+        XCTAssertEqual(inside, ["B", "C", "D"])
+        XCTAssertFalse(inside.contains("A"))
+        XCTAssertFalse(inside.contains("E"))
+    }
+
+    func testEdgeToSubgraphIdMintsNoPhantomNode() throws {
+        let c = try flow("""
+            subgraph SG [Sub]
+              X --> Y
+            end
+            Z --> SG
+            """)
+        // "SG" is a subgraph id, never a node — the edge resolves to its box.
+        XCTAssertFalse(c.nodes.contains { $0.id == "SG" }, "no phantom SG node")
+        XCTAssertEqual(c.nodes.map(\.id).sorted(), ["X", "Y", "Z"])
+        XCTAssertTrue(c.edges.contains { $0.from == "Z" && $0.to == "SG" })
+        // The layout is clean and the edge terminates on the group box.
+        let scene = DiagramScene.lower(.flowchart(c), measure: measure)
+        XCTAssertTrue(DiagramLayoutLinter.lint(scene).allSatisfy { $0.severity == .warning },
+                      "edge-to-subgraph must not produce layout errors")
+    }
+
+    func testNestedSubgraphs() throws {
+        let c = try flow("""
+            subgraph Outer [Outer]
+              A --> B
+              subgraph Inner [Inner]
+                B --> C
+              end
+            end
+            """)
+        XCTAssertEqual(c.subgraphs.count, 2)
+        let outer = try XCTUnwrap(c.subgraphs.first { $0.id == "Outer" })
+        let inner = try XCTUnwrap(c.subgraphs.first { $0.id == "Inner" })
+        XCTAssertEqual(outer.childIDs, ["Inner"], "Inner nests under Outer")
+        XCTAssertEqual(inner.nodeIDs, ["C"], "C belongs to Inner, not Outer")
+        XCTAssertFalse(outer.nodeIDs.contains("C"))
+        // Two boxes, and Inner sits strictly inside Outer.
+        let layout = DiagramLayoutEngine.layout(c, measure: measure)
+        XCTAssertEqual(layout.containers.count, 2)
+        let outerBox = try XCTUnwrap(layout.containers.first { $0.id == "Outer" })
+        let innerBox = try XCTUnwrap(layout.containers.first { $0.id == "Inner" })
+        XCTAssertEqual(outerBox.depth, 0)
+        XCTAssertEqual(innerBox.depth, 1)
+        XCTAssertTrue(outerBox.frame.insetBy(dx: -1, dy: -1).contains(innerBox.frame),
+                      "Inner box must nest within Outer box")
+    }
+
+    func testSubgraphInnerDirection() throws {
+        let c = try flow("""
+            subgraph G [Group]
+              direction LR
+              A --> B
+            end
+            """)
+        XCTAssertEqual(c.subgraphs.first?.direction, .leftRight)
+    }
+
+    func testBareAndQuotedSubgraphTitles() throws {
+        let bare = try flow("subgraph one\n  A --> B\nend")
+        XCTAssertEqual(bare.subgraphs.first?.id, "one")
+        XCTAssertEqual(bare.subgraphs.first?.label, "one")
     }
 
     // MARK: sequence

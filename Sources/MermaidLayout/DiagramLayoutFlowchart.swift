@@ -30,6 +30,19 @@ extension DiagramLayoutEngine {
     /// renderer only draws.
     public static func layout(_ chart: Flowchart, measure: DiagramTextMeasurer,
                               spacing: DiagramSpacing = .regular) -> FlowchartLayout {
+        // Flat charts (the common case) take the algorithm below directly.
+        // Subgraphs route through the recursive cluster wrapper, which lays
+        // out each group's interior as its own sub-chart and places it as a
+        // sized box in the parent — so this core never has to know about them.
+        if chart.subgraphs.isEmpty {
+            return layoutFlat(chart, measure: measure, spacing: spacing)
+        }
+        return layoutClustered(chart, measure: measure, spacing: spacing)
+    }
+
+    static func layoutFlat(_ chart: Flowchart, measure: DiagramTextMeasurer,
+                           spacing: DiagramSpacing = .regular,
+                           sizeOverrides: [String: CGSize] = [:]) -> FlowchartLayout {
         let flowchartMargin = spacing.resolvedMargin(base: Self.flowchartMargin)
         let flowchartLayerGap = spacing.resolvedLayerGap(base: Self.flowchartLayerGap)
         let flowchartNodeGap = spacing.resolvedNodeGap(base: Self.flowchartNodeGap)
@@ -54,6 +67,9 @@ extension DiagramLayoutEngine {
         var layers: [[String]] = Array(repeating: [], count: layerCount)
         for id in ids { layers[layerOf[id]!].append(id) }
         var sizes = flowchartNodeSizes(chart.nodes, measure: measure)
+        // Cluster placeholders arrive pre-sized (their sub-layout dimensions
+        // plus box chrome); that measurement overrides the label-based guess.
+        for (id, size) in sizeOverrides { sizes[id] = size }
         var chains: [[String]] = []
         var segmentEdges: [(String, String)] = []
         var dummies: Set<String> = []

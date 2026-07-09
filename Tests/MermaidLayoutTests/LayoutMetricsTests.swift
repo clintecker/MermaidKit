@@ -29,8 +29,10 @@ final class LayoutMetricsTests: XCTestCase {
     func testLayeredFamilyEdgeLengthBudgets() throws {
         // Measured on the self-referential fixtures with network-simplex
         // layering and label-space reservation, +10% headroom (class 1928 /
-        // state 4369 / er 2401 / flowchart 3335 at re-baseline). Longest-path
-        // layering blows these budgets regardless of content.
+        // state 4447 / er 2403 / flowchart 2808 at re-baseline — recursive
+        // subgraph clustering tightened flowchart's members, so its total
+        // edge length fell from the pre-cluster 3335). Longest-path layering
+        // blows these budgets regardless of content.
         for (name, budget) in [("class", CGFloat(2150)), ("state", 4800),
                                ("er", 2650), ("flowchart", 3700)] {
             let length = try edgeLength(name)

@@ -39,9 +39,9 @@ public struct Flowchart: Hashable, Sendable {
 
     /// A connection between two nodes.
     public struct Edge: Hashable, Sendable {
-        /// Source node id (an id in `nodes`).
+        /// Source node id (an id in `nodes`, or a subgraph id in `subgraphs`).
         public let from: String
-        /// Target node id (an id in `nodes`).
+        /// Target node id (an id in `nodes`, or a subgraph id in `subgraphs`).
         public let to: String
         /// Optional `|label|` text.
         public var label: String?
@@ -53,10 +53,45 @@ public struct Flowchart: Hashable, Sendable {
         public var backArrow: Bool = false
     }
 
+    /// A `subgraph id[Label] … end` grouping box. Membership is by id: a node
+    /// or nested subgraph belongs to the innermost subgraph that lists it.
+    /// Nesting is arbitrary; an edge endpoint may name a subgraph id (the
+    /// group as a whole), which the layout connects to the group's box border.
+    public struct Subgraph: Hashable, Sendable, Identifiable {
+        /// The subgraph's identifier (synthesized `sub0`, `sub1`, … when the
+        /// source gives only a title).
+        public let id: String
+        /// Header text drawn at the top of the box.
+        public var label: String
+        /// Direct member node ids, in first-appearance order (excludes members
+        /// of nested child subgraphs).
+        public var nodeIDs: [String]
+        /// Directly-nested child subgraph ids, in declaration order.
+        public var childIDs: [String]
+        /// Inner `direction` override; nil inherits the parent chart's flow.
+        public var direction: Direction?
+        public init(id: String, label: String, nodeIDs: [String] = [],
+                    childIDs: [String] = [], direction: Direction? = nil) {
+            self.id = id; self.label = label; self.nodeIDs = nodeIDs
+            self.childIDs = childIDs; self.direction = direction
+        }
+    }
+
     public var direction: Direction
     /// Nodes in first-appearance order (declared or first referenced).
     public var nodes: [Node]
     public var edges: [Edge]
+    /// Subgraph grouping boxes, in declaration order; empty for a flat chart
+    /// (the common case — the layout takes a zero-overhead fast path).
+    public var subgraphs: [Subgraph]
+
+    public init(direction: Direction, nodes: [Node], edges: [Edge],
+                subgraphs: [Subgraph] = []) {
+        self.direction = direction
+        self.nodes = nodes
+        self.edges = edges
+        self.subgraphs = subgraphs
+    }
 }
 
 /// A state machine with nested composite states. Distinct from Flowchart so

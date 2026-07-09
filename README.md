@@ -82,7 +82,9 @@ mermaid.js, and the failure mode is deliberate:
   YAML front-matter (all types); flowchart chained edges
   (`A --> B --> C`), `&` fan-out, inline `-- text -->` labels,
   bidirectional `<-->`, min-length links, `--o`/`--x` heads, edge IDs,
-  `:::class` tolerance; the full everyday sequence set — combined
+  `:::class` tolerance, nested `subgraph` group boxes (with inner
+  `direction` and edges that target a group id); the full everyday
+  sequence set — combined
   fragments (`loop`/`alt`+`else`/`opt`/`par`/`critical`/`break`, nested)
   with `rect` bands, activation bars (`->>+`/`->>-`, `activate`), `box`
   groupings, notes with `<br/>` line breaks, `actor` figures, typed
@@ -91,8 +93,8 @@ mermaid.js, and the failure mode is deliberate:
   directive lines (never phantom bars) and `y/M/s` durations; radar
   positional values; packet `+N` relative widths; treemap `:::class`;
   gitGraph `cherry-pick`; class generics `~T~`; ER attribute keys; state
-  composites, forks, choices. Some still doesn't (flowchart subgraph
-  boxes, flowchart `@{ shape }`). If your diagram parses but drops
+  composites, forks, choices. Some still doesn't (flowchart
+  `@{ shape }`). If your diagram parses but drops
   something you wrote, that's a gap: please
   [open an issue](#reporting-a-diagram-that-renders-wrong) with the source.
 
