@@ -8,6 +8,27 @@ extension DiagramScene {
     /// Lowers any parsed diagram to its scene by laying it out and delegating
     /// to the per-type `from(_:)` overload (one per `DiagramScene+<Type>.swift`).
     public static func lower(_ diagram: MermaidDiagram, measure: DiagramTextMeasurer) -> DiagramScene {
+        var scene = lowerBody(diagram, measure: measure)
+        // Titles are drawn by the shared drawDiagramTitle at (width/2, y 14);
+        // most per-type lowerings never included them, leaving the linter
+        // blind to title-vs-content collisions and clipped long titles. Add
+        // the title label centrally — for every current and future type —
+        // unless the type's own lowering already emitted it (pie, radar).
+        if let title = diagram.titleText, !title.isEmpty,
+           !scene.labels.contains(where: { $0.text == title && $0.frame.minY < 26 }) {
+            let width = measure(title, 12.5).width
+            scene = DiagramScene(
+                name: scene.name, size: scene.size,
+                nodes: scene.nodes, edges: scene.edges,
+                labels: scene.labels + [Label(
+                    text: title,
+                    frame: CGRect(x: scene.size.width / 2 - width / 2, y: 7,
+                                  width: width, height: 14))])
+        }
+        return scene
+    }
+
+    private static func lowerBody(_ diagram: MermaidDiagram, measure: DiagramTextMeasurer) -> DiagramScene {
         switch diagram {
         case .flowchart(let d):   return .from(DiagramLayoutEngine.layout(d, measure: measure))
         case .sequence(let d):    return .from(DiagramLayoutEngine.layout(d, measure: measure))

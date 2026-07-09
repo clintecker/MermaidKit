@@ -17,18 +17,22 @@ extension DiagramScene {
             edges: layout.edges.map { edge in
                 Edge(polyline: edge.points, label: edge.label)
             },
-            labels: layout.edges.compactMap { edge -> Label? in
+            labels: layout.edges.enumerated().compactMap { index, edge -> Label? in
                 guard let text = edge.label, !text.isEmpty,
                       edge.points.count >= 2
                 else { return nil }
                 // Place the label at the polyline's arc-length midpoint, which
-                // sits in a gap channel rather than over a cell.
+                // sits in a gap channel rather than over a cell. The renderer
+                // draws it on a canvas chip via drawEdgeLabel, on its own
+                // route — lowering it bare with no anchorEdge guaranteed a
+                // false-positive edge-cuts-label on every labeled edge.
                 let center = polylineMidpoint(edge.points)
                 let width = DiagramScene.estimatedLabelSize(text).width
                 return Label(
                     text: text,
                     frame: CGRect(x: center.x - width / 2, y: center.y - 7,
-                                  width: width, height: 14)
+                                  width: width, height: 14),
+                    anchorEdge: index, backed: true
                 )
             }
         )

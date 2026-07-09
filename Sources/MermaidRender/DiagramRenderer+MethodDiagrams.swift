@@ -7,6 +7,22 @@ import MermaidLayout
 
 extension DiagramRenderer {
 
+    /// Text on an opaque canvas chip — the fill that makes a scene label's
+    /// `backed: true` an honest claim.
+    static func drawChippedText(_ text: String, center: CGPoint, size: CGFloat,
+                                weight: PlatformFont.Weight = .regular,
+                                color: PlatformColor, theme: DiagramTheme,
+                                in context: CGContext) {
+        let measured = measure(text, size: size, weight: weight)
+        let pad: CGFloat = 3
+        context.setFillColor(resolvedCGColor(theme.canvas.withAlphaComponent(0.88)))
+        context.fill(CGRect(x: center.x - measured.width / 2 - pad,
+                            y: center.y - measured.height / 2 - pad,
+                            width: measured.width + pad * 2,
+                            height: measured.height + pad * 2))
+        drawText(text, center: center, size: size, weight: weight, color: color, in: context)
+    }
+
     // MARK: - Ishikawa (fishbone)
 
     static func draw(_ layout: IshikawaLayout, theme: DiagramTheme, in context: CGContext) {
@@ -39,8 +55,8 @@ extension DiagramRenderer {
             context.move(to: rib.from)
             context.addLine(to: rib.to)
             context.strokePath()
-            drawText(rib.label, center: rib.labelCenter, size: labelSize,
-                     weight: .semibold, color: theme.ink, in: context)
+            drawChippedText(rib.label, center: rib.labelCenter, size: labelSize,
+                            weight: .semibold, color: theme.ink, theme: theme, in: context)
             context.setStrokeColor(resolvedCGColor(theme.hairline))
             context.setLineWidth(1)
             for twig in rib.twigs {
@@ -48,8 +64,8 @@ extension DiagramRenderer {
                 context.move(to: twig.from)
                 context.addLine(to: twig.to)
                 context.strokePath()
-                drawText(twig.label, center: twig.labelCenter, size: labelSize,
-                         color: theme.secondaryTextColor, in: context)
+                drawChippedText(twig.label, center: twig.labelCenter, size: labelSize,
+                                color: theme.secondaryTextColor, theme: theme, in: context)
             }
         }
     }

@@ -248,14 +248,25 @@ public enum DiagramLayoutLinter {
             }
         }
 
-        // 5. Marks escaping the plot: when a SOLE container bounds the data
-        //    region (a chart plot covering most of the canvas), no edge may
-        //    leave it — catches a line/series running off the chart. Multiple
-        //    containers are lanes/composites, which edges legitimately cross,
-        //    so the check applies only to the single-plot shape.
-        let containers = scene.nodes.filter(\.isContainer)
-        if containers.count == 1, let plot = containers.first,
-           plot.frame.width * plot.frame.height > 0.35 * scene.size.width * scene.size.height {
+        // 5. Marks escaping the plot: when a sole DOMINANT container bounds
+        //    the data region (a chart plot covering most of the canvas), no
+        //    edge may leave it — catches a line/series running off the chart.
+        //    "Dominant" = covering >35% of the canvas: small containers (bar
+        //    marks, which are containers only to opt out of occlusion) don't
+        //    count, and multiple dominant containers are lanes/composites
+        //    that edges legitimately cross, so the check skips those.
+        let boxes5 = scene.nodes.filter { !$0.isContainer }
+        let dominantContainers = scene.nodes.filter { container in
+            guard container.isContainer,
+                  container.frame.width * container.frame.height
+                    > 0.35 * scene.size.width * scene.size.height else { return false }
+            // A PLOT holds all the data marks. Groupings that edges cross by
+            // design — sequence box bands, swimlane lanes — are dominant too,
+            // but they never contain every non-container node.
+            let bounds = container.frame.insetBy(dx: -2, dy: -2)
+            return boxes5.allSatisfy { bounds.contains($0.frame) }
+        }
+        if dominantContainers.count == 1, let plot = dominantContainers.first {
             let bounds = plot.frame.insetBy(dx: -2, dy: -2)
             for (ei, edge) in scene.edges.enumerated() where edge.polyline.contains(where: { !bounds.contains($0) }) {
                 out.append(.init(.error, "mark-escapes-plot", "edge #\(ei) runs outside the plot area"))

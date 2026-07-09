@@ -73,6 +73,26 @@ public enum MermaidDiagram: Hashable, Sendable {
         case .block: return "block"
         }
     }
+
+    /// The diagram's title, when its dialect has one — used by the scene
+    /// lowering so titles are visible to the geometry linter.
+    public var titleText: String? {
+        switch self {
+        case .pie(let d): return d.title
+        case .gantt(let d): return d.title
+        case .timeline(let d): return d.title
+        case .journey(let d): return d.title
+        case .quadrant(let d): return d.title
+        case .packet(let d): return d.title
+        case .xychart(let d): return d.title
+        case .radar(let d): return d.title
+        case .wardley(let d): return d.title
+        case .cynefin(let d): return d.title
+        case .zenuml(let d): return d.title
+        case .c4(let d): return d.title
+        default: return nil
+        }
+    }
 }
 
 // MARK: - Parser

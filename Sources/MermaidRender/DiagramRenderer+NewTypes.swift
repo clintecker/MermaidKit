@@ -259,8 +259,8 @@ extension DiagramRenderer {
                      color: theme.ink, in: context)
         }
         for note in layout.notes {
-            drawText(note.text, center: note.center, size: 9,
-                     color: theme.tertiaryTextColor, in: context)
+            drawChippedText(note.text, center: note.center, size: 9,
+                            color: theme.tertiaryTextColor, theme: theme, in: context)
         }
     }
 }
