@@ -150,6 +150,10 @@ public enum DiagramLayoutLinter {
     ///   interior (inset 3pt, so border touches don't count) exceeds half the
     ///   box's short side, with an 18pt floor so wires meeting tiny nodes
     ///   (git-commit dots) at centre aren't flagged.
+    /// - `edge-endpoint-detached`: in a node-graph scene (flowchart/state) an
+    ///   edge's start or end floats off every node border, or the polyline
+    ///   collapsed to a degenerate zero-length stub. Scoped by scene name —
+    ///   other families' edges attach to lifelines/spines/plot geometry.
     /// - `nodes-overlap`: two non-container boxes intersect by more than 2pt
     ///   in both axes; full containment is excluded.
     /// - `off-canvas`: a node or label extends outside the canvas (±1pt).
@@ -198,6 +202,44 @@ public enum DiagramLayoutLinter {
                 if insideLength > max(0.5 * min(inner.width, inner.height), 18) {
                     out.append(.init(.error, "edge-occludes-node",
                         "edge #\(ei)\(edge.label.map { " (\"\($0)\")" } ?? "") passes through node \"\(node.id)\" (\(Int(insideLength))pt inside)"))
+                }
+            }
+        }
+
+        // 1b. Edge endpoints must attach to a node (node-graph families only).
+        //     In flowchart/state every edge connects two boxes, so a polyline
+        //     whose first/last point floats off every node border — or which
+        //     collapsed to a zero-length/degenerate stub — is a real defect: the
+        //     reported cycle back-edge that rendered as a dangling wire / stray
+        //     line (issue #1). Scoped by scene name because other families'
+        //     edges legitimately land on non-node geometry (sequence arrows on
+        //     lifelines, ishikawa bones on the spine, gitgraph/wardley/treeview
+        //     on plot geometry), where this check would false-positive.
+        if scene.name == "flowchart" || scene.name == "state" {
+            // Both plain nodes AND container borders count as attachment: an
+            // edge legitimately terminates on a subgraph / composite-state box
+            // (the layout resolves such endpoints to the group's border).
+            let attachBoxes = scene.nodes
+            for (ei, edge) in scene.edges.enumerated() {
+                guard let first = edge.polyline.first, let last = edge.polyline.last else {
+                    out.append(.init(.error, "edge-endpoint-detached",
+                        "edge #\(ei)\(edge.label.map { " (\"\($0)\")" } ?? "") has no polyline"))
+                    continue
+                }
+                // Degenerate: a collapsed route (coincident/near-zero extent)
+                // draws as a dot or a spurious stub, never a real connector.
+                let extent = edge.polyline.dropFirst().reduce(CGFloat(0)) { acc, p in
+                    max(acc, hypot(p.x - first.x, p.y - first.y))
+                }
+                if extent < 1 {
+                    out.append(.init(.error, "edge-endpoint-detached",
+                        "edge #\(ei)\(edge.label.map { " (\"\($0)\")" } ?? "") is degenerate (zero-length stub)"))
+                    continue
+                }
+                for (which, p) in [("start", first), ("end", last)]
+                where !attachBoxes.contains(where: { $0.frame.insetBy(dx: -6, dy: -6).contains(p) }) {
+                    out.append(.init(.error, "edge-endpoint-detached",
+                        "edge #\(ei)\(edge.label.map { " (\"\($0)\")" } ?? "") \(which) detached from every node"))
                 }
             }
         }

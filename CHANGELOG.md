@@ -1,16 +1,68 @@
 # Changelog
 
+## 0.12.0
+
+MermaidKit is stably consumable again. **Problem: v0.11.0 pinned the Silica
+Linux backend to `branch: master`, an unstable-version dependency. SwiftPM
+forbids a package consumed via a stable version tag (`from: "0.x.0"`) from
+transitively depending on a branch/revision, so every tagged 0.11.0 release
+was UNRESOLVABLE by a normal `from:`-pinned host** (this is what stranded
+Quoin on 0.10.0). Worse, even platform-conditioned, SwiftPM still fetched
+Silica and its entire transitive graph (Cairo, FontConfig, PureSwift/Android,
+Kotlin, JavaScriptKit, swift-java, swift-syntax — 16 packages) on macOS/iOS
+consumers that never link a Silica symbol.
+
+- The Silica/Cairo dependency and the `SilicaCairo`/`Cairo` product links are
+  now gated behind a **package trait, `LinuxRaster` (SwiftPM 6.1+), default
+  OFF**. A consumer that doesn't opt in resolves a graph with ZERO
+  Silica/Cairo/branch dependencies — so a stable `from:` resolve is clean on
+  every platform, and Apple hosts never fetch the Linux raster stack. Verified:
+  a default `swift package resolve` produces an empty external graph (0
+  checkouts); `--traits LinuxRaster` brings Silica + its 16-package graph back.
+- Linux users who want the native raster backend opt in:
+  `.package(url: "…/MermaidKit", from: "0.12.0", traits: ["LinuxRaster"])`,
+  or `swift build --traits LinuxRaster`.
+- CI's Linux job builds and tests with `--traits LinuxRaster` (exercising the
+  Silica backend) AND builds `MermaidLayout` with default traits (proving the
+  headless, Silica-free graph a `from:` consumer gets). `Package.resolved` is
+  no longer committed (a trait-on lockfile would re-fetch the whole graph for
+  MermaidKit's own default build); it is git-ignored.
+- MermaidLayout + MermaidRender build on macOS, iOS, and Linux; the 183-test
+  macOS suite and the Linux suite stay green.
+
+Flowchart cycle back-edges (issue #1): the layered engine already routes a
+back-edge through a real, node-attached polyline (confirmed across LR/TD,
+tight two-node cycles, and multi-rank cycles), but nothing *guaranteed* it.
+
+- `routeChains` can no longer emit a degenerate edge: the old
+  "< 2 points" fallback shipped a `[.zero, .zero]` stub (a dangling wire at the
+  origin — the reported "stray vertical line / no connector"). It now falls
+  back to a straight border-to-border segment between the two nodes' anchors,
+  so every flowchart edge is a non-degenerate, attached polyline.
+- New scoped linter rule `edge-endpoint-detached` (node-graph families only —
+  flowchart/state, whose every edge connects two boxes): flags any edge whose
+  first/last polyline point is a degenerate/zero stub or lands off every node
+  or container border. Sequence/ishikawa/gitgraph/wardley/treeview, whose edges
+  attach to lifelines/spines/plot geometry, are exempt by construction.
+- BackEdgeReproTests now asserts NON-degeneracy (distinct endpoints, real
+  extent, label on the path) in addition to endpoint attachment.
+- Node re-declaration (`B{Decision}` then `B[Figga]`) is deliberate and
+  matches mermaid.js `addVertex`: a later explicit shape+label overrides the
+  earlier; a bare back-reference (`D -->|who| B`) preserves the earlier shape.
+
 ## 0.11.0
 
 Native rendering on **Linux**. `MermaidRender` now draws with Silica
 (Cairo/FontConfig) as well as CoreGraphics/CoreText, sharing the exact layout
 and per-type draw code — all 30 diagram types render to PNG and PDF headless on
 swift-corelibs-foundation. See `docs/notes/linux-rendering-via-silica.md`.
+(0.12.0 puts this backend behind the `LinuxRaster` trait — see above — so the
+"Silica's transitive graph forces the toolchain floor / is fetched everywhere"
+notes below now apply only when the trait is enabled.)
 
 - **Toolchain floor is now Swift 6.2 / Xcode 26.** The manifest moved to
-  `swift-tools-version: 6.2`: Silica's transitive dependency graph requires it,
-  and SwiftPM parses every manifest in the graph regardless of platform. All
-  consumers must build with Swift 6.2+.
+  `swift-tools-version: 6.2` (also required by package traits). All consumers
+  must build with Swift 6.2+.
 - `SilicaCairo` + `Cairo` are **Linux-only** target dependencies; on Apple they
   are never linked (CoreGraphics/CoreText are used, output unchanged).
 - On Linux, `MermaidRenderer.image(...)` returns a `PlatformImage` with

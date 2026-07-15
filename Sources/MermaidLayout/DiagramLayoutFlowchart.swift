@@ -559,14 +559,26 @@ extension DiagramLayoutEngine {
         var crossLimit = flowchartMargin + crossExtent
         for f in frames.values { crossLimit = max(crossLimit, horizontal ? f.maxY : f.maxX) }
         for (index, edge) in chart.edges.enumerated() {
-            let pts = routes[index]
-            guard pts.count >= 2 else {
-                let p = CGPoint.zero
-                placedEdges.append(FlowchartLayout.PlacedEdge(
-                    start: p, end: p, points: [p, p],
-                    label: edge.label, dashed: edge.dashed, hasArrow: edge.hasArrow,
-                    backArrow: edge.backArrow))
-                continue
+            var pts = routes[index]
+            if pts.count < 2 {
+                // The chain-based route collapsed (a cycle back-edge whose
+                // waypoints degenerated, or an endpoint whose frame is missing).
+                // Never ship the old `[.zero, .zero]` stub — that renders as a
+                // dangling wire / stray line at the origin (issue #1). Fall back
+                // to a straight border-to-border segment between the two nodes'
+                // frames, so the edge is always a real, node-attached polyline.
+                if let ff = frames[edge.from], let tf = frames[edge.to] {
+                    let a = CGPoint(x: ff.midX, y: ff.midY)
+                    let b = CGPoint(x: tf.midX, y: tf.midY)
+                    pts = [rectBorderPoint(ff, toward: b), rectBorderPoint(tf, toward: a)]
+                } else {
+                    // Truly unresolvable (endpoint node never placed): keep the
+                    // one-entry-per-edge invariant but with a zero-length point,
+                    // not a spurious diagonal. Nothing to attach to.
+                    let f = frames[edge.from] ?? frames[edge.to]
+                    let p = f.map { CGPoint(x: $0.midX, y: $0.midY) } ?? .zero
+                    pts = [p, p]
+                }
             }
             for p in pts { crossLimit = max(crossLimit, horizontal ? p.y : p.x) }
             placedEdges.append(FlowchartLayout.PlacedEdge(
@@ -657,6 +669,21 @@ extension DiagramLayoutEngine {
 
     private static func offsetCross(_ p: CGPoint, by d: CGFloat, horizontal: Bool) -> CGPoint {
         horizontal ? CGPoint(x: p.x, y: p.y + d) : CGPoint(x: p.x + d, y: p.y)
+    }
+
+    /// The point on `rect`'s border where the ray from its center toward
+    /// `target` exits — used by the routing fallback to land a collapsed edge on
+    /// its node's actual border rather than at its center or the origin.
+    static func rectBorderPoint(_ rect: CGRect, toward target: CGPoint) -> CGPoint {
+        let c = CGPoint(x: rect.midX, y: rect.midY)
+        let dx = target.x - c.x, dy = target.y - c.y
+        if abs(dx) < 0.0001 && abs(dy) < 0.0001 { return CGPoint(x: rect.maxX, y: c.y) }
+        let hw = rect.width / 2, hh = rect.height / 2
+        // Largest t in (0,1] keeping the point inside the box on both axes.
+        let tx = abs(dx) < 0.0001 ? CGFloat.greatestFiniteMagnitude : hw / abs(dx)
+        let ty = abs(dy) < 0.0001 ? CGFloat.greatestFiniteMagnitude : hh / abs(dy)
+        let t = min(tx, ty)
+        return CGPoint(x: c.x + dx * t, y: c.y + dy * t)
     }
 
     /// Drops points that lie on a straight run with their neighbours, and exact
