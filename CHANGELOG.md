@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.0.0
+
+Stable release. The public API is frozen: the entry points (`MermaidParser`,
+`DiagramLayoutEngine`, `DiagramScene`, `DiagramLayoutLinter`, `MermaidRenderer`,
+`MermaidView`, `DiagramTheme`) are stable, and from here model/layout field
+changes are semver-major.
+
+What 1.0 is: **30 diagram types** parsed, laid out, and rendered natively —
+CoreGraphics/CoreText on Apple, Silica/Cairo on Linux (behind the `LinuxRaster`
+trait) — with no JavaScript and no WebView. Layout quality is machine-checked
+by a geometry linter and a draw-vs-scene conformance ratchet in CI; the package
+is cleanly `from:`-consumable on every platform (Silica-free by default).
+
+- **Line breaks in labels.** `<br>` in every form (`<br>`, `<br/>`, `<br />`,
+  case-insensitive, with attributes) plus a literal `\n` and any real newline
+  break box/node labels and sequence notes onto multiple lines (the box grows);
+  fixed chrome (legends, chart axes) collapses them to a space.
+
+Known issue: a cross-process layout-ordering nondeterminism in a few non-layered
+types (the layered/flowchart family is deterministic); tracked as an open issue.
+
 ## 0.12.0
 
 MermaidKit is stably consumable again. **Problem: v0.11.0 pinned the Silica

@@ -15,7 +15,7 @@ Feature groups are labeled **G1–G9** and referenced by shorthand throughout.
 | :--- | :--- |
 | Name | MermaidKit |
 | Definition | A native Swift library that parses, lays out, and renders [Mermaid](https://mermaid.js.org) diagrams. The diagram source is the input; the library produces typed models, pure geometry (a scene IR), and drawn images and PDF — on Apple platforms via CoreGraphics/CoreText, on Linux via Silica (Cairo/FontConfig). No JavaScript, no WebView, no Mermaid.js. |
-| Status | Pre-release, active development. Latest tag `v0.12.0` (Linux rendering backend gated behind the `LinuxRaster` package trait, so no-trait consumers keep a Silica-free graph). Rendering ships on Apple platforms and Linux; `MermaidLayout` is platform-free. |
+| Status | **1.0** — stable public API (the entry points are frozen; model/layout field changes are now semver-major). Latest tag `v1.0.0`. Rendering ships on Apple platforms and on Linux (behind the `LinuxRaster` package trait, so no-trait consumers keep a Silica-free graph); `MermaidLayout` is platform-free. |
 | Repository | github.com/clintecker/MermaidKit |
 | Platforms | Rendering: macOS 14+, iOS 17+, visionOS 1+ (CoreGraphics/CoreText); Linux (Silica/Cairo). Geometry (`MermaidLayout`): platform-free — builds and tests on any swift-corelibs-foundation target. |
 | Language / runtime | Swift 6 (`swift-tools-version: 6.2`, strict concurrency; the Silica backend's transitive graph sets a Swift 6.2 / Xcode 26 floor). Drawing via CoreGraphics/CoreText on Apple, Silica/Cairo on Linux. Zero JavaScript at runtime; local-only. |
@@ -152,7 +152,7 @@ Named properties with dedicated tests, run on every CI build.
 | Feature | Specific |
 | :--- | :--- |
 | Draw-vs-scene conformance ratchet | Every text rect the renderer paints must be covered by a scene node/label; per-type uncovered-chrome ceilings can only ratchet *down*, so new uncovered text fails the build (`DrawSceneConformanceTests`, over all 30 fixtures). |
-| Deterministic layout | The same source yields identical geometry across runs; a same-width rename moves nothing; appending a leaf has bounded blast radius (`StabilityTests`). |
+| Deterministic layout | The same source yields identical geometry across repeated layouts in a process; the layered family (flowchart etc.) is order-stable via model-order tie-breaks. A same-width rename moves nothing; appending a leaf has bounded blast radius (`StabilityTests`). (A cross-process ordering gap in a few non-layered types is tracked as an open issue.) |
 | Straight spines | Brandes–Köpf balancing plus model-order tie-breaks keep single-parent chains straight (`ChainAlignmentTests`). |
 | Geometry linting in CI | Every fixture lints clean over exact geometry on every run (`LayoutLintTests`); the `edge-cuts-label` invariant has its own suite. |
 | Platform-free contract | The Linux CI job proves `MermaidLayout` builds and tests without CoreGraphics (the guard that caught a `CGVector` portability break) — and now also builds + renders `MermaidRender` via Silica. |

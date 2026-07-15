@@ -58,11 +58,12 @@ The wide public surface — every model and layout struct — is deliberate:
 headless geometry is a feature, not leakage. The deal that keeps it from
 becoming a semver trap:
 
-- Pre-1.0, minor versions may reshape model/layout fields (they follow the
-  diagrams' needs); the *entry points* (`MermaidParser.parse`/`diagnose`,
+- The *entry points* (`MermaidParser.parse`/`diagnose`,
   `DiagramLayoutEngine.layout`, `DiagramScene.lower`, `DiagramLayoutLinter`,
-  `MermaidRenderer`, `MermaidView`, `DiagramTheme`) stay stable.
-- Post-1.0, model/field changes are semver-major.
+  `MermaidRenderer`, `MermaidView`, `DiagramTheme`) are stable — and always
+  have been.
+- **As of 1.0, model/layout field changes are semver-major.** Before 1.0 they
+  could reshape to follow the diagrams' needs; that window is closed.
 
 ## Most-wanted
 
