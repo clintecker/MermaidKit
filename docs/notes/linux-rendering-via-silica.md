@@ -186,6 +186,19 @@ yourself via FreeType or accept reduced fidelity. Don't assume — measure.
    -f`. In a sandboxed Docker, `apt` may only reach mirrors over 443 — flip
    sources to HTTPS. Docker Desktop on macOS only shares `/Users` back to the
    host, so write verification PNGs there, not `/tmp`.
+5. **Rendering isn't reproducible across process launches by default.** Swift
+   randomizes the `Set`/`Dictionary` hash seed per process, and a few layouts
+   iterate hashed collections in a way that reaches geometry — so the same
+   source renders a hair differently in two runs. Within-process determinism
+   tests miss it; a golden-image test (comparing against an image from another
+   process) catches it immediately. Set `SWIFT_DETERMINISTIC_HASHING=1` for any
+   reference-image testing. **Open follow-up:** the underlying cross-process
+   layout nondeterminism (a hashed-collection order leaking into coordinates —
+   at least in the zenuml layout, likely a couple of others) is worth fixing at
+   the source (sort before iterating / use model order) so output is stable for
+   users too, not just under the test's fixed seed. If Vinculum's math layout
+   uses hashed collections anywhere positions are derived, it will have the same
+   latent issue.
 
 ---
 

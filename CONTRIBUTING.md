@@ -52,6 +52,16 @@ The porting approach is written up in
 `docs/notes/linux-rendering-via-silica.md`. The toolchain floor is Swift 6.2 /
 Xcode 26 — package traits (and Silica's graph, when enabled) require it.
 
+`LinuxGoldenTests` compares every Linux render against a committed reference
+image in `Tests/MermaidRenderTests/__golden__/` — the pixel-level backstop for
+appearance drift the geometry linter can't see. If a change *intentionally*
+alters how a fixture renders, regenerate and review the new images:
+
+    UPDATE_GOLDENS=1 scripts/test-linux.sh
+
+The CI container is digest-pinned and the run uses `SWIFT_DETERMINISTIC_HASHING`
+so the goldens stay stable; regenerate whenever either moves deliberately.
+
 ## API stability stance
 
 The wide public surface — every model and layout struct — is deliberate:

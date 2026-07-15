@@ -70,6 +70,16 @@ let package = Package(
             ],
             path: "Sources/MermaidRender"),
         .testTarget(name: "MermaidLayoutTests", dependencies: ["MermaidLayout"], path: "Tests/MermaidLayoutTests"),
-        .testTarget(name: "MermaidRenderTests", dependencies: ["MermaidRender", "MermaidLayout"], path: "Tests/MermaidRenderTests"),
+        .testTarget(
+            name: "MermaidRenderTests",
+            dependencies: [
+                "MermaidRender", "MermaidLayout",
+                // LinuxGoldenTests decodes PNGs via Cairo to compare pixels;
+                // same platform+trait gate as the render backend, so it's absent
+                // (and unlinked) for Apple and no-trait consumers.
+                .product(name: "Cairo", package: "Cairo",
+                         condition: .when(platforms: [.linux], traits: ["LinuxRaster"])),
+            ],
+            path: "Tests/MermaidRenderTests"),
     ]
 )

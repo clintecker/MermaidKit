@@ -28,6 +28,9 @@ docker run --rm \
     fc-cache -f >/dev/null
     swift --version
     swift build --traits LinuxRaster
+    # Fixed hash seed so rendering is reproducible across process launches —
+    # required by LinuxGoldenTests (see its header).
+    export SWIFT_DETERMINISTIC_HASHING=1
     swift test --traits LinuxRaster
     # The platform-free core must ALSO build with the default (Silica-free)
     # graph — the configuration a headless from:-pinned consumer resolves.

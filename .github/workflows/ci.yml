@@ -48,7 +48,10 @@ jobs:
     name: swift test (Linux)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    container: swift:6.2
+    # Digest-pinned (not the moving `swift:6.2` tag) so the Cairo/FreeType
+    # rasterization environment can't drift underneath LinuxGoldenTests'
+    # reference images. Bump deliberately alongside `UPDATE_GOLDENS=1`.
+    container: swift@sha256:dd349c6dfc3cd3040910a84ab3e5bd5d08efdd547e5fb9f77b765abed16fe5ff
     steps:
       - uses: actions/checkout@v4
       # MermaidRender's Linux backend draws with Silica (Cairo/FontConfig), so
@@ -70,10 +73,23 @@ jobs:
       # proves the trait actually pulls Silica into the graph.
       - name: Build (whole package, incl. the Silica render backend)
         run: swift build --traits LinuxRaster
-      # Runs MermaidLayoutTests (159) plus LinuxRenderTests (the Silica render
-      # smoke tests); the Apple-only render tests compile away here.
+      # Runs MermaidLayoutTests, the LinuxRenderTests smoke tests, and the
+      # LinuxGoldenTests reference-image comparison; the Apple-only render tests
+      # compile away here. SWIFT_DETERMINISTIC_HASHING fixes the per-process hash
+      # seed so rendering is reproducible against the goldens (see that test).
       - name: Test
         run: swift test --traits LinuxRaster
+        env:
+          SWIFT_DETERMINISTIC_HASHING: "1"
+      # On a golden-image mismatch, upload the actual renders so the drift can be
+      # eyeballed against the committed reference images.
+      - name: Upload golden failures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-failures
+          path: .golden-failures/
+          if-no-files-found: ignore
       # The platform-free core must ALSO build with the default (Silica-free)
       # graph on Linux — that is exactly the configuration a headless
       # `from:`-pinned consumer gets, and it must never regress.
