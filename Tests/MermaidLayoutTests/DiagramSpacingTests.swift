@@ -1,5 +1,9 @@
 import XCTest
+#if canImport(CoreGraphics)
 import CoreGraphics
+#else
+import Foundation
+#endif
 @testable import MermaidLayout
 
 /// The density knob must stay SAFE at every preset: tighter spacing is where

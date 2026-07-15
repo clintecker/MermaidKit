@@ -1,5 +1,9 @@
 import XCTest
+#if canImport(CoreGraphics)
 import CoreGraphics
+#else
+import Foundation
+#endif
 @testable import MermaidLayout
 
 /// The parser and layout engines must never crash, hang, or trap on

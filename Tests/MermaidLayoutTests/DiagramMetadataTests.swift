@@ -1,5 +1,9 @@
 import XCTest
+#if canImport(CoreGraphics)
 import CoreGraphics
+#else
+import Foundation
+#endif
 @testable import MermaidLayout
 
 /// Front-matter and accessibility statements are metadata ABOUT the diagram,

@@ -1,7 +1,9 @@
-#if canImport(AppKit) || canImport(UIKit)
+#if canImport(AppKit) || canImport(UIKit) || canImport(SilicaCairo)
 import Foundation
-import CoreGraphics
 import MermaidLayout
+#if canImport(AppKit) || canImport(UIKit)
+import CoreGraphics
+#endif
 
 // Renderers for ishikawa, eventmodeling, and swimlane.
 

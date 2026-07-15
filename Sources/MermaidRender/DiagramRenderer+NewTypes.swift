@@ -1,8 +1,9 @@
-#if canImport(AppKit) || canImport(UIKit)
+#if canImport(AppKit) || canImport(UIKit) || canImport(SilicaCairo)
 import Foundation
-import CoreGraphics
-import CoreText
 import MermaidLayout
+#if canImport(AppKit) || canImport(UIKit)
+import CoreGraphics
+#endif
 
 // Renderers for the v0.5.0 diagram types: treeView, venn, cynefin, wardley.
 

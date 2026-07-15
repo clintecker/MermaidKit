@@ -1,12 +1,14 @@
-#if canImport(AppKit) || canImport(UIKit)
+#if canImport(AppKit) || canImport(UIKit) || canImport(SilicaCairo)
 import Foundation
-import CoreText
-import CoreGraphics
 import MermaidLayout
 
 #if canImport(AppKit)
+import CoreGraphics
+import CoreText
 import AppKit
-#else
+#elseif canImport(UIKit)
+import CoreGraphics
+import CoreText
 import UIKit
 #endif
 

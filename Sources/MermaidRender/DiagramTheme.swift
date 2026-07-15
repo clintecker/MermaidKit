@@ -1,10 +1,13 @@
-#if canImport(AppKit) || canImport(UIKit)
+#if canImport(AppKit) || canImport(UIKit) || canImport(SilicaCairo)
 import Foundation
-import CoreGraphics
 import MermaidLayout
 #if canImport(AppKit)
+import CoreGraphics
+import CoreText
 import AppKit
-#else
+#elseif canImport(UIKit)
+import CoreGraphics
+import CoreText
 import UIKit
 #endif
 
@@ -102,9 +105,12 @@ public struct DiagramTheme: Sendable {
         } else {
             pairs = colors.map(convert)
         }
-        #else
+        #elseif canImport(UIKit)
         let traits = UITraitCollection(userInterfaceStyle: prefersDark ? .dark : .light)
         pairs = colors.map { convert($0.resolvedColor(with: traits)) }
+        #else
+        // Linux: no appearance system; colors are already fixed sRGB values.
+        pairs = colors.map(convert)
         #endif
         return (pairs.map(\.0), (prefersDark ? "d" : "l") + pairs.map(\.digest).joined())
     }

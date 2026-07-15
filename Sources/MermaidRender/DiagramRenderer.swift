@@ -1,12 +1,14 @@
-#if canImport(AppKit) || canImport(UIKit)
+#if canImport(AppKit) || canImport(UIKit) || canImport(SilicaCairo)
 import Foundation
-import CoreText
-import CoreGraphics
 import MermaidLayout
 
 #if canImport(AppKit)
+import CoreGraphics
+import CoreText
 import AppKit
-#else
+#elseif canImport(UIKit)
+import CoreGraphics
+import CoreText
 import UIKit
 #endif
 
@@ -15,6 +17,7 @@ import UIKit
 /// from the platform-free MermaidLayout engine; this file only draws.
 enum DiagramRenderer {
 
+    #if canImport(AppKit) || canImport(UIKit)
     private final class Entry {
         let image: PlatformImage
         /// VoiceOver description, attached to the image so accessibility
@@ -43,6 +46,7 @@ enum DiagramRenderer {
 
     /// ~64 MB of rendered diagrams (cost = estimated decoded bytes).
     private static let cache = RenderCache(totalCostLimit: 64 << 20)
+    #endif
 
     /// A rendered attachment for mermaid source, or nil when the dialect
     /// isn't supported yet (caller keeps the styled-source fallback).
@@ -244,6 +248,36 @@ enum DiagramRenderer {
         return (size, edgePolylines, draw)
     }
 
+    #if canImport(SilicaCairo) && !canImport(AppKit) && !canImport(UIKit)
+    /// Linux raster backend: renders `source` to a Cairo-backed `PlatformImage`
+    /// (PNG-exportable), sharing the exact `renderPlan`/`captionedPlan`/
+    /// `paddedCanvas` pipeline the Apple backends use — only the surface and
+    /// output type differ.
+    static func renderImage(source: String, theme: DiagramTheme,
+                            spacing: DiagramSpacing = .regular) -> PlatformImage? {
+        guard let diagram = MermaidParser.parse(source) else { return nil }
+        let (size, edgePolylines, draw) = captionedPlan(
+            renderPlan(for: diagram, theme: theme, spacing: spacing),
+            source: source, diagram: diagram, theme: theme)
+        guard let (canvasSize, originX, originY) = paddedCanvas(size: size, edgePolylines: edgePolylines) else { return nil }
+        guard let surface = try? Cairo.Surface.Image(
+            format: .argb32, width: Int(canvasSize.width.rounded(.up)), height: Int(canvasSize.height.rounded(.up))),
+              let context = try? CairoContext(surface: surface, size: canvasSize, flipped: true)
+        else { return nil }
+        // Paint the theme canvas, then the diagram (translated into the pad).
+        context.setFillColor(resolvedCGColor(theme.canvas))
+        context.fill(CGRect(origin: .zero, size: canvasSize))
+        context.saveGState()
+        context.translateBy(x: originX, y: originY)
+        draw(context)
+        context.restoreGState()
+        var image = PlatformImage(surface: surface, size: canvasSize)
+        image.accessibilityDescription = MermaidAltText.describe(diagram)
+        return image
+    }
+    #endif
+
+    #if canImport(AppKit) || canImport(UIKit)
     static func attachmentString(source: String, theme: DiagramTheme,
                                  spacing: DiagramSpacing = .regular) -> NSAttributedString? {
         // Cache first: a hit must not pay a re-parse of up-to-50KB source
@@ -337,6 +371,7 @@ enum DiagramRenderer {
         attachment.bounds = CGRect(origin: .zero, size: image.size)
         return NSAttributedString(attachment: attachment)
     }
+    #endif
 
     // MARK: - Pie
 

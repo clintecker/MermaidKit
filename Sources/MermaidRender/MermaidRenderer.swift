@@ -1,9 +1,12 @@
-#if canImport(AppKit) || canImport(UIKit)
+#if canImport(AppKit) || canImport(UIKit) || canImport(SilicaCairo)
 import Foundation
-import CoreGraphics
 #if canImport(AppKit)
+import CoreGraphics
+import CoreText
 import AppKit
-#else
+#elseif canImport(UIKit)
+import CoreGraphics
+import CoreText
 import UIKit
 #endif
 import MermaidLayout
@@ -15,11 +18,15 @@ public enum MermaidRenderer {
     /// recognized Mermaid diagram. The image auto-sizes to the diagram bounds.
     public static func image(source: String, theme: DiagramTheme,
                              spacing: DiagramSpacing = .regular) -> PlatformImage? {
+        #if canImport(AppKit) || canImport(UIKit)
         guard let attr = attachmentString(source: source, theme: theme, spacing: spacing),
               attr.length > 0,
               let attachment = attr.attribute(.attachment, at: 0, effectiveRange: nil) as? NSTextAttachment
         else { return nil }
         return attachment.image
+        #else
+        return DiagramRenderer.renderImage(source: source, theme: theme, spacing: spacing)
+        #endif
     }
 
     /// Renders off the calling thread — for hosts batching many diagrams or
@@ -49,12 +56,16 @@ public enum MermaidRenderer {
         }
     }
 
+    #if canImport(AppKit) || canImport(UIKit)
     /// The diagram as a single-attachment attributed string, for embedding in
     /// a text view (how a markdown editor embeds it). Nil when not Mermaid.
+    /// Apple platforms only (NSTextAttachment); on Linux use ``image`` and its
+    /// `pngData()`.
     public static func attachmentString(source: String, theme: DiagramTheme,
                                         spacing: DiagramSpacing = .regular) -> NSAttributedString? {
         DiagramRenderer.attachmentString(source: source, theme: theme, spacing: spacing)
     }
+    #endif
 
     /// A VoiceOver-ready description of the diagram (type, scale, leading
     /// content) — what ``MermaidView`` reads to assistive technologies.

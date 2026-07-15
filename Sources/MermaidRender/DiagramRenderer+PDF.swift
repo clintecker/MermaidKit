@@ -1,10 +1,13 @@
-#if canImport(AppKit) || canImport(UIKit)
+#if canImport(AppKit) || canImport(UIKit) || canImport(SilicaCairo)
 import Foundation
-import CoreGraphics
 import MermaidLayout
 #if canImport(AppKit)
+import CoreGraphics
+import CoreText
 import AppKit
-#else
+#elseif canImport(UIKit)
+import CoreGraphics
+import CoreText
 import UIKit
 #endif
 
@@ -24,6 +27,24 @@ extension DiagramRenderer {
         guard let (canvasSize, originX, originY) =
                 paddedCanvas(size: plan.size, edgePolylines: plan.edgePolylines) else { return nil }
 
+        #if canImport(SilicaCairo) && !canImport(AppKit) && !canImport(UIKit)
+        // Linux: Cairo PDF surface. Silica writes to a URL, so render one page
+        // to a temp file and read the bytes back. The context is flipped
+        // (top-left origin) like the raster path, so the shared draw code needs
+        // no extra flip here.
+        let dir = FileManager.default.temporaryDirectory
+        let url = dir.appendingPathComponent("mermaidkit-\(UUID().uuidString).pdf")
+        guard let context = try? CairoContext(pdf: url, size: canvasSize) else { return nil }
+        context.setFillColor(resolvedCGColor(theme.canvas))
+        context.fill(CGRect(origin: .zero, size: canvasSize))
+        context.saveGState()
+        context.translateBy(x: originX, y: originY)
+        plan.draw(context)
+        context.restoreGState()
+        try? context.finish()
+        defer { try? FileManager.default.removeItem(at: url) }
+        return try? Data(contentsOf: url)
+        #else
         let data = NSMutableData()
         guard let consumer = CGDataConsumer(data: data as CFMutableData) else { return nil }
         var mediaBox = CGRect(origin: .zero, size: canvasSize)
@@ -58,6 +79,7 @@ extension DiagramRenderer {
         context.endPDFPage()
         context.closePDF()
         return data as Data
+        #endif
     }
 }
 #endif
