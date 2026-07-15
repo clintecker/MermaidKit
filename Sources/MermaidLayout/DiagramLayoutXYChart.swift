@@ -69,9 +69,10 @@ extension DiagramLayoutEngine {
             if !points.isEmpty { lines.append(XYChartLayout.Line(points: Array(points), colorIndex: seriesIndex)) }
         }
 
-        // x-axis category labels.
+        // x-axis category labels. Axis chrome is single-line: collapse any
+        // line break to a space rather than wrap a fixed-height tick strip.
         let xLabels = chart.categories.enumerated().map { i, text in
-            XYChartLayout.Label(text: text, center: CGPoint(x: categoryCenter(i), y: plotRect.maxY + 11))
+            XYChartLayout.Label(text: flattenLines(text), center: CGPoint(x: categoryCenter(i), y: plotRect.maxY + 11))
         }
 
         // y-axis value ticks (5 divisions).
@@ -84,15 +85,15 @@ extension DiagramLayoutEngine {
         }
 
         let yAxisTitle = chart.yAxisTitle.map {
-            XYChartLayout.Label(text: $0, center: CGPoint(x: margin + 6, y: plotRect.midY))
+            XYChartLayout.Label(text: flattenLines($0), center: CGPoint(x: margin + 6, y: plotRect.midY))
         }
         let xAxisTitle = chart.xAxisTitle.map {
-            XYChartLayout.Label(text: $0, center: CGPoint(x: plotRect.midX, y: plotRect.maxY + xStrip - 2))
+            XYChartLayout.Label(text: flattenLines($0), center: CGPoint(x: plotRect.midX, y: plotRect.maxY + xStrip - 2))
         }
 
         return XYChartLayout(
             size: CGSize(width: plotRect.maxX + margin, height: plotRect.maxY + xStrip + margin),
-            title: chart.title,
+            title: chart.title.map(flattenLines),
             plotRect: plotRect,
             bars: bars,
             lines: lines,

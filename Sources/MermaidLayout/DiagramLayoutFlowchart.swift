@@ -734,6 +734,16 @@ extension DiagramLayoutEngine {
             .filter { !$0.isEmpty }
     }
 
+    /// Collapses every line break (see `brLines`) to a single space — for fixed
+    /// single-line chrome (pie legends/titles, chart axis ticks) where wrapping
+    /// would overflow a row sized for one line. Boxes that grow to their label
+    /// (nodes, notes) keep the raw text and let `drawText` stack the lines.
+    public static func flattenLines(_ text: String) -> String {
+        let lines = brLines(text)
+        return lines.isEmpty ? text.trimmingCharacters(in: .whitespaces)
+                             : lines.joined(separator: " ")
+    }
+
     public static func layout(_ diagram: SequenceDiagram, measure: DiagramTextMeasurer) -> SequenceLayout {
         let margin: CGFloat = 12
         let headPaddingX: CGFloat = 14
@@ -994,7 +1004,10 @@ extension DiagramLayoutEngine {
             let fraction = total > 0 ? slice.value / total : 0
             let sweep = fraction * 2 * .pi
             slices.append(PieLayout.Slice(
-                label: slice.label,
+                // Legend/title are fixed single-line chrome: collapse any line
+                // break to a space so a `<br/>` in a slice name doesn't wrap a
+                // legend row (which is a fixed 20pt tall).
+                label: flattenLines(slice.label),
                 value: slice.value,
                 fraction: fraction,
                 startAngle: angle,
@@ -1004,7 +1017,7 @@ extension DiagramLayoutEngine {
             angle += sweep
         }
 
-        let legendWidth = pie.slices
+        let legendWidth = slices
             .map { measure("\($0.label) (0000)", labelFontSize).width + 22 }
             .max() ?? 80
         let legendHeight = CGFloat(pie.slices.count) * 20
@@ -1017,7 +1030,8 @@ extension DiagramLayoutEngine {
         // estimated as the larger of the measured glyph run and the scene
         // lowering's estimatedLabelSize heuristic, so both the render and the
         // geometry check fit.
-        let titleWidth: CGFloat = pie.title.map { title in
+        let flatTitle = pie.title.map(flattenLines)   // single-line chrome
+        let titleWidth: CGFloat = flatTitle.map { title in
             max(measure(title, 12.5).width, DiagramScene.estimatedLabelSize(title).width)
         } ?? 0
         let leftPad = max(margin, titleWidth / 2 - radius + margin)
@@ -1032,7 +1046,7 @@ extension DiagramLayoutEngine {
             size: CGSize(width: width, height: height),
             center: CGPoint(x: centerX, y: margin + titleHeight + radius),
             radius: radius,
-            title: pie.title,
+            title: flatTitle,
             slices: slices,
             legendOrigin: CGPoint(
                 x: legendX,

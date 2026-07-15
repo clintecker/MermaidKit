@@ -39,7 +39,7 @@ extension DiagramLayoutEngine {
         for i in 0..<axisCount {
             spokes.append(RadarLayout.Spoke(
                 end: point(fraction: 1, axis: i),
-                label: chart.axes[i].label,
+                label: flattenLines(chart.axes[i].label),   // single-line chrome
                 labelPoint: point(fraction: 1.16, axis: i)
             ))
         }
@@ -60,20 +60,21 @@ extension DiagramLayoutEngine {
         var legendWidth: CGFloat = 0
         for (i, curve) in chart.curves.enumerated() {
             let y = chartBottom + 10 + CGFloat(i) * 18
+            let label = flattenLines(curve.label)   // single-line legend chrome
             legend.append(RadarLayout.LegendEntry(
-                label: curve.label,
+                label: label,
                 swatchCenter: CGPoint(x: margin + 6, y: y),
                 labelPoint: CGPoint(x: margin + 18, y: y),
                 colorIndex: i
             ))
-            legendWidth = max(legendWidth, 18 + measure(curve.label, labelFontSize).width)
+            legendWidth = max(legendWidth, 18 + measure(label, labelFontSize).width)
         }
 
         let width = max(center.x + radius + hMargin + margin, margin + legendWidth + margin)
         let height = (legend.last?.labelPoint.y ?? chartBottom) + margin
         return RadarLayout(
             size: CGSize(width: width, height: height),
-            title: chart.title,
+            title: chart.title.map(flattenLines),
             center: center,
             rings: rings,
             spokes: spokes,

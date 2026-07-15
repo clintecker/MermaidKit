@@ -27,8 +27,9 @@ extension DiagramLayoutEngine {
         for point in chart.points {
             let position = CGPoint(x: x(point.x), y: y(point.y))
             let labelPoint = CGPoint(x: position.x + dotRadius + 5, y: position.y)
-            points.append(QuadrantLayout.Point(label: point.label, position: position, labelPoint: labelPoint))
-            maxLabelRight = max(maxLabelRight, labelPoint.x + measure(point.label, labelFontSize).width)
+            let label = flattenLines(point.label)   // single-line point chrome
+            points.append(QuadrantLayout.Point(label: label, position: position, labelPoint: labelPoint))
+            maxLabelRight = max(maxLabelRight, labelPoint.x + measure(label, labelFontSize).width)
         }
 
         // Quadrant quarters (Mermaid order: 1 TR, 2 TL, 3 BL, 4 BR).
@@ -49,23 +50,23 @@ extension DiagramLayoutEngine {
             let rect = quarters[index]
             let isBottom = index >= 2   // q3 (BL) and q4 (BR) are the bottom row
             let cy = isBottom ? rect.maxY - 14 : rect.minY + 14
-            quadrantLabels.append(QuadrantLayout.Label(text: name, center: CGPoint(x: rect.midX, y: cy)))
+            quadrantLabels.append(QuadrantLayout.Label(text: flattenLines(name), center: CGPoint(x: rect.midX, y: cy)))
         }
 
         // Axis-end labels, centered under/beside each half.
         var xAxisLabels: [QuadrantLayout.Label] = []
         if let left = chart.xAxisLeft {
-            xAxisLabels.append(.init(text: left, center: CGPoint(x: plotRect.minX + side * 0.25, y: plotRect.maxY + xStrip / 2 + 4)))
+            xAxisLabels.append(.init(text: flattenLines(left), center: CGPoint(x: plotRect.minX + side * 0.25, y: plotRect.maxY + xStrip / 2 + 4)))
         }
         if let right = chart.xAxisRight {
-            xAxisLabels.append(.init(text: right, center: CGPoint(x: plotRect.minX + side * 0.75, y: plotRect.maxY + xStrip / 2 + 4)))
+            xAxisLabels.append(.init(text: flattenLines(right), center: CGPoint(x: plotRect.minX + side * 0.75, y: plotRect.maxY + xStrip / 2 + 4)))
         }
         var yAxisLabels: [QuadrantLayout.Label] = []
         if let bottom = chart.yAxisBottom {
-            yAxisLabels.append(.init(text: bottom, center: CGPoint(x: plotRect.minX - yGutter / 2, y: plotRect.minY + side * 0.75)))
+            yAxisLabels.append(.init(text: flattenLines(bottom), center: CGPoint(x: plotRect.minX - yGutter / 2, y: plotRect.minY + side * 0.75)))
         }
         if let top = chart.yAxisTop {
-            yAxisLabels.append(.init(text: top, center: CGPoint(x: plotRect.minX - yGutter / 2, y: plotRect.minY + side * 0.25)))
+            yAxisLabels.append(.init(text: flattenLines(top), center: CGPoint(x: plotRect.minX - yGutter / 2, y: plotRect.minY + side * 0.25)))
         }
 
         let width = max(maxLabelRight, plotRect.maxX) + margin
@@ -73,7 +74,7 @@ extension DiagramLayoutEngine {
 
         return QuadrantLayout(
             size: CGSize(width: width, height: height),
-            title: chart.title,
+            title: chart.title.map(flattenLines),
             plotRect: plotRect,
             dotRadius: dotRadius,
             points: points,
