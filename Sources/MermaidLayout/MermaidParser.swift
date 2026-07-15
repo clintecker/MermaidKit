@@ -121,14 +121,10 @@ public enum MermaidParser {
         guard source.count <= maxTextSize else { return nil }
         // YAML front-matter (`---\ntitle: ...\n---`) precedes the header in
         // doc examples; without stripping it, `---` became the header and
-        // every config-bearing example fell back to styled source.
-        var source = source
-        if source.hasPrefix("---") {
-            let all = source.split(separator: "\n", omittingEmptySubsequences: false)
-            if let close = all.dropFirst().firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == "---" }) {
-                source = all[(close + 1)...].joined(separator: "\n")
-            }
-        }
+        // every config-bearing example fell back to styled source. The same
+        // pass removes `accTitle:`/`accDescr:` statements so no dialect ever
+        // sees them as content (they read back via `metadata(in:)`).
+        let source = stripMetadata(from: source).body
         let lines = source
             .split(separator: "\n", omittingEmptySubsequences: false)
             .map { $0.trimmingCharacters(in: .whitespaces) }

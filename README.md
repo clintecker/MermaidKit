@@ -79,7 +79,11 @@ mermaid.js, and the failure mode is deliberate:
   `style`, `linkStyle`, `click`) → **ignored, not fatal**: the diagram still
   parses and renders with MermaidKit's own theme. Ditto comments (`%%`).
 - **Structural syntax that goes beyond the core** — much of it works:
-  YAML front-matter (all types); flowchart chained edges
+  YAML front-matter (all types — the `title:` renders as mermaid.js's
+  centred caption, other keys like `config:` are tolerated and ignored);
+  `accTitle:`/`accDescr:` accessibility statements (all types — they feed
+  the generated alt text and read back via `MermaidParser.metadata(in:)`,
+  never appearing as content); flowchart chained edges
   (`A --> B --> C`), `&` fan-out, inline `-- text -->` labels,
   bidirectional `<-->`, min-length links, `--o`/`--x` heads, edge IDs,
   `:::class` tolerance, nested `subgraph` group boxes (with inner

@@ -82,15 +82,30 @@ public struct DiagramScene: Sendable, Codable {
     public let edges: [Edge]
     /// All free-standing labels (never a node's own centred label).
     public let labels: [Label]
+    /// The front-matter `title:` — a caption hosts may render above the
+    /// diagram. Metadata only: no node or label carries it, and the
+    /// geometry checks ignore it.
+    public let title: String?
+    /// The `accTitle:` statement — the diagram's accessible name.
+    public let accessibilityTitle: String?
+    /// The `accDescr:` statement — the diagram's accessible description.
+    public let accessibilityDescription: String?
 
-    /// Creates a scene; `edges`/`labels` default empty for connector-less types.
+    /// Creates a scene; `edges`/`labels` default empty for connector-less
+    /// types, and the metadata fields default absent.
     public init(name: String, size: CGSize, nodes: [Node],
-                edges: [Edge] = [], labels: [Label] = []) {
+                edges: [Edge] = [], labels: [Label] = [],
+                title: String? = nil,
+                accessibilityTitle: String? = nil,
+                accessibilityDescription: String? = nil) {
         self.name = name
         self.size = size
         self.nodes = nodes
         self.edges = edges
         self.labels = labels
+        self.title = title
+        self.accessibilityTitle = accessibilityTitle
+        self.accessibilityDescription = accessibilityDescription
     }
 }
 

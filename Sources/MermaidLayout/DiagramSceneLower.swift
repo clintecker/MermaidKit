@@ -28,6 +28,22 @@ extension DiagramScene {
         return scene
     }
 
+    /// Lowers a parsed diagram and stamps the source's metadata (front-matter
+    /// title, accTitle, accDescr) onto the scene, so hosts consuming the IR
+    /// can caption the diagram and set accessibility labels. Geometry is
+    /// identical to ``lower(_:measure:)`` — metadata is data, not layout.
+    public static func lower(_ diagram: MermaidDiagram, metadata: DiagramMetadata,
+                             measure: DiagramTextMeasurer) -> DiagramScene {
+        let scene = lower(diagram, measure: measure)
+        guard !metadata.isEmpty else { return scene }
+        return DiagramScene(
+            name: scene.name, size: scene.size,
+            nodes: scene.nodes, edges: scene.edges, labels: scene.labels,
+            title: metadata.title,
+            accessibilityTitle: metadata.accessibilityTitle,
+            accessibilityDescription: metadata.accessibilityDescription)
+    }
+
     private static func lowerBody(_ diagram: MermaidDiagram, measure: DiagramTextMeasurer) -> DiagramScene {
         switch diagram {
         case .flowchart(let d):   return .from(DiagramLayoutEngine.layout(d, measure: measure), measure: measure)

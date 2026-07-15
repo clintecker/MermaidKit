@@ -210,6 +210,40 @@ enum DiagramRenderer {
                 pad - bounds.minX, pad - bounds.minY)
     }
 
+    /// Wraps a render plan in a caption band when the source carries a
+    /// front-matter `title:` — the centred title above the diagram that
+    /// mermaid.js draws, in the standard `drawDiagramTitle` ink (12.5pt
+    /// semibold `theme.ink`, so it rides the DiagramTheme seam). Types whose
+    /// dialect already draws its own title (pie, gantt, …) pass through
+    /// untouched — the title must never double. Both output backends
+    /// (raster and PDF) consume the wrapped plan, so captions reach every
+    /// format at once.
+    static func captionedPlan(
+        _ plan: (size: CGSize, edgePolylines: [[CGPoint]], draw: (CGContext) -> Void),
+        source: String, diagram: MermaidDiagram, theme: DiagramTheme
+    ) -> (size: CGSize, edgePolylines: [[CGPoint]], draw: (CGContext) -> Void) {
+        guard diagram.titleText == nil,
+              let caption = MermaidParser.metadata(in: source).title
+        else { return plan }
+        let band: CGFloat = 26
+        let width = max(plan.size.width, measure(caption, size: 12.5, weight: .semibold).width + 16)
+        let dx = (width - plan.size.width) / 2
+        let size = CGSize(width: width, height: plan.size.height + band)
+        // Shift the overflow-tracking polylines with the content, or the
+        // padded canvas would clip the moved routes.
+        let edgePolylines = plan.edgePolylines.map { line in
+            line.map { CGPoint(x: $0.x + dx, y: $0.y + band) }
+        }
+        let draw: (CGContext) -> Void = { context in
+            drawDiagramTitle(caption, width: width, theme: theme, in: context)
+            context.saveGState()
+            context.translateBy(x: dx, y: band)
+            plan.draw(context)
+            context.restoreGState()
+        }
+        return (size, edgePolylines, draw)
+    }
+
     static func attachmentString(source: String, theme: DiagramTheme,
                                  spacing: DiagramSpacing = .regular) -> NSAttributedString? {
         // Cache first: a hit must not pay a re-parse of up-to-50KB source
@@ -222,7 +256,9 @@ enum DiagramRenderer {
 
         let entry: Entry
         do {
-            let (size, edgePolylines, draw) = renderPlan(for: diagram, theme: theme, spacing: spacing)
+            let (size, edgePolylines, draw) = captionedPlan(
+                renderPlan(for: diagram, theme: theme, spacing: spacing),
+                source: source, diagram: diagram, theme: theme)
             guard let (canvasSize, originX, originY) = paddedCanvas(size: size, edgePolylines: edgePolylines) else { return nil }
 
             #if canImport(AppKit)

@@ -117,13 +117,35 @@ public enum MermaidAltText {
         }
     }
 
+    /// A description honoring the author's own accessibility statements: the
+    /// accTitle (or front-matter title) and accDescr lead, then the generated
+    /// structural summary — the author's words first, always backed by the
+    /// honest scale.
+    public static func describe(_ diagram: MermaidDiagram, metadata: DiagramMetadata) -> String {
+        var parts: [String] = []
+        if let title = metadata.accessibilityTitle ?? metadata.title { parts.append(sentence(title)) }
+        if let descr = metadata.accessibilityDescription { parts.append(sentence(descr)) }
+        parts.append(describe(diagram))
+        return parts.joined(separator: " ")
+    }
+
     /// Parses and describes in one call; nil when the source doesn't parse
     /// (hosts fall back to their own description of the raw source).
+    /// Front-matter titles and accTitle/accDescr statements lead the text.
     public static func describe(source: String) -> String? {
-        MermaidParser.parse(source).map(describe)
+        MermaidParser.parse(source).map {
+            describe($0, metadata: MermaidParser.metadata(in: source))
+        }
     }
 
     // MARK: - Phrasing helpers
+
+    /// Author text as a sentence: terminal punctuation added when missing.
+    private static func sentence(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard let last = trimmed.last else { return trimmed }
+        return ".!?".contains(last) ? trimmed : trimmed + "."
+    }
 
     private static func countNodes(_ nodes: [TreeViewNode]) -> Int {
         nodes.reduce(0) { $0 + 1 + countNodes($1.children) }

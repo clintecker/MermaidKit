@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+Front-matter and accessibility metadata are first-class. Previously the
+YAML front-matter block was stripped wholesale (its `title:` discarded) and
+`accTitle:`/`accDescr:` lines were only tolerated by a couple of dialects.
+
+- `MermaidParser.metadata(in:)` returns the new `DiagramMetadata`
+  (`title`, `accessibilityTitle`, `accessibilityDescription`); one linear
+  scan, no diagram parse. Front-matter keys other than a top-level `title:`
+  (`config:`, `layout:`, `look:`, `theme:`, …) stay a graceful no-op.
+- `accTitle:` / `accDescr:` statements (single-line and `accDescr { … }`
+  block form, keyword case-insensitive) are stripped before any dialect
+  parses the body, so they can never mint stray nodes — in ANY type.
+- The front-matter `title:` renders as mermaid.js's centred caption above
+  the diagram (standard title ink via the `DiagramTheme` seam), in both the
+  raster and PDF paths. Dialects that draw their own title (pie, gantt, …)
+  are untouched — no doubling.
+- `DiagramScene` gains optional `title` / `accessibilityTitle` /
+  `accessibilityDescription` fields; `DiagramScene.lower(_:metadata:measure:)`
+  stamps them (geometry unchanged — metadata is data, not layout).
+- `MermaidAltText` leads with the author's own accTitle/accDescr (or the
+  front-matter title) before the generated structural summary;
+  `attachmentString`/`MermaidView` pick that up automatically.
+
 ## 0.9.0
 
 Flowchart subgraphs render as group boxes — the first of the audit's
