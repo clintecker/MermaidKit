@@ -1,5 +1,9 @@
 import XCTest
+#if canImport(CoreGraphics)
 import CoreGraphics
+#else
+import Foundation
+#endif
 @testable import MermaidLayout
 
 /// The honesty sprint's contract: syntax that used to be silently dropped or
@@ -43,6 +47,30 @@ final class ParserHonestyTests: XCTestCase {
     func testInlineEdgeLabel() throws {
         let c = try flow("A-- hello -->B")
         XCTAssertEqual(c.edges.first?.label, "hello")
+    }
+
+    /// Node re-declaration (issue #1, symptom 3): a later EXPLICIT declaration
+    /// overrides both shape and label — mermaid.js's `addVertex` assigns
+    /// `vertex.type = type` unconditionally when a shape is given and likewise
+    /// overwrites the text. So `B{Decision}` then `B[Figga]` is a rectangle
+    /// labelled "Figga", not a diamond. Deliberate and mermaid-faithful, not
+    /// incidental.
+    func testExplicitRedeclarationOverridesShapeAndLabel() throws {
+        let c = try flow("A --> B{Decision}\nD -->|who| B[Figga]")
+        let b = c.nodes.first { $0.id == "B" }
+        XCTAssertEqual(b?.shape, .rectangle, "last explicit shape wins (mermaid parity)")
+        XCTAssertEqual(b?.label, "Figga", "last explicit label wins")
+    }
+
+    /// A BARE back-reference (`... B`, no brackets) carries no shape or label,
+    /// so it must NOT clobber an earlier `B{Decision}` — the diamond and its
+    /// text survive. (This is why the reported cycle renders cleanly when B is
+    /// left as a bare reference.)
+    func testBareReferenceKeepsEarlierShape() throws {
+        let c = try flow("A --> B{Decision}\nD -->|who| B")
+        let b = c.nodes.first { $0.id == "B" }
+        XCTAssertEqual(b?.shape, .diamond, "bare reference must not reshape")
+        XCTAssertEqual(b?.label, "Decision", "bare reference must not relabel")
     }
 
     func testMinLengthLinksNormalize() throws {
