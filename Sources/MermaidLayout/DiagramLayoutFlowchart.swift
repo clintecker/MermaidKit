@@ -709,11 +709,27 @@ extension DiagramLayoutEngine {
     /// widened for adjacent-participant message labels), one message arrow per
     /// row below, self-messages as loops. Pure geometry — the renderer only
     /// draws.
-    /// Splits on mermaid's `<br/>` (and `<br>`) message/note line breaks.
-    /// Public: the renderer draws the same lines the layout measured.
+    /// Any `<br …>` tag, case-insensitive: covers `<br>`, `<br/>`, `<br />`,
+    /// extra whitespace, and even stray attributes (`<br class="x">`). The `\b`
+    /// after `br` stops it matching words like `<brilliant>`. Compiled once.
+    private static let brTagRegex =
+        try? NSRegularExpression(pattern: "<br\\b[^>]*>", options: .caseInsensitive)
+
+    /// Splits `text` into visual lines on every line-break form mermaid diagrams
+    /// use interchangeably: any `<br…>` HTML tag, a literal backslash-n (`\n`,
+    /// the two characters authors often type), and any real newline character
+    /// (`\n`, `\r`, `\r\n`, Unicode line/paragraph separators). Each line is
+    /// trimmed and empties are dropped, so stray, leading, trailing, or repeated
+    /// breaks never produce blank lines. Public so the renderer draws exactly
+    /// the lines the layout measured.
     public static func brLines(_ text: String) -> [String] {
-        text.replacingOccurrences(of: "<br>", with: "<br/>")
-            .components(separatedBy: "<br/>")
+        var s = text
+        if let re = brTagRegex {
+            s = re.stringByReplacingMatches(
+                in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "\n")
+        }
+        s = s.replacingOccurrences(of: "\\n", with: "\n")   // literal backslash-n
+        return s.components(separatedBy: .newlines)          // every real newline form
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
     }

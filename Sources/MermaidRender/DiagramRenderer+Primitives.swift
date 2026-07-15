@@ -20,7 +20,24 @@ extension DiagramRenderer {
     }
     #endif
 
+    /// Measures `text`, honoring `<br/>`/`\n` line breaks: the width is the
+    /// widest line, the height the sum of the line heights. Single-line labels
+    /// (the common case) skip the split via a cheap `hasLineBreak` guard.
     static func measure(_ text: String, size: CGFloat, weight: PlatformFont.Weight = .regular) -> CGSize {
+        guard hasLineBreak(text) else { return measureLine(text, size: size, weight: weight) }
+        let lines = DiagramLayoutEngine.brLines(text)
+        switch lines.count {
+        case 0: return measureLine("", size: size, weight: weight)
+        case 1: return measureLine(lines[0], size: size, weight: weight)
+        default:
+            let sizes = lines.map { measureLine($0, size: size, weight: weight) }
+            return CGSize(width: sizes.map(\.width).max() ?? 0,
+                          height: sizes.map(\.height).reduce(0, +))
+        }
+    }
+
+    /// Measures a single visual line (no line-break handling).
+    private static func measureLine(_ text: String, size: CGFloat, weight: PlatformFont.Weight) -> CGSize {
         #if canImport(AppKit) || canImport(UIKit)
         let attributed = NSAttributedString(string: text, attributes: [
             kCTFontAttributeName as NSAttributedString.Key: font(size, weight: weight),
@@ -44,6 +61,14 @@ extension DiagramRenderer {
         #endif
     }
 
+    /// True if `text` might contain a line break — a cheap guard so the common
+    /// single-line label skips the `brLines` split. Broad on purpose: a false
+    /// positive just takes the (correct) split path, so it only needs to never
+    /// MISS a real break (`<br…>`, literal `\n`, or any real newline).
+    private static func hasLineBreak(_ text: String) -> Bool {
+        text.contains("<br") || text.contains("\\n") || text.contains(where: \.isNewline)
+    }
+
     /// Draws text centered on `center` in a flipped (y-down) context.
     #if DEBUG
     /// Test-only: receives every text rect drawText paints, in layout
@@ -56,6 +81,8 @@ extension DiagramRenderer {
     nonisolated(unsafe) static var textCaptureSuspended = false
     #endif
 
+    /// Draws `text` centered on `center`, honoring `<br/>`/`\n` line breaks:
+    /// lines stack top-to-bottom with the whole block centered on `center`.
     static func drawText(
         _ text: String,
         center: CGPoint,
@@ -66,6 +93,8 @@ extension DiagramRenderer {
     ) {
         guard !text.isEmpty else { return }
         #if DEBUG
+        // One capture for the whole (possibly multi-line) block, so the
+        // conformance test sees it against the scene label's block-sized frame.
         if let hook = textCaptureHook, !textCaptureSuspended {
             let measured = measure(text, size: size, weight: weight)
             hook(text, CGRect(x: center.x - measured.width / 2,
@@ -73,6 +102,29 @@ extension DiagramRenderer {
                               width: measured.width, height: measured.height))
         }
         #endif
+        guard hasLineBreak(text) else {
+            drawLine(text, center: center, size: size, weight: weight, color: color, in: context)
+            return
+        }
+        let lines = DiagramLayoutEngine.brLines(text)
+        switch lines.count {
+        case 0: return
+        case 1: drawLine(lines[0], center: center, size: size, weight: weight, color: color, in: context)
+        default:
+            let heights = lines.map { measureLine($0, size: size, weight: weight).height }
+            var top = center.y - heights.reduce(0, +) / 2
+            for (i, line) in lines.enumerated() {
+                drawLine(line, center: CGPoint(x: center.x, y: top + heights[i] / 2),
+                         size: size, weight: weight, color: color, in: context)
+                top += heights[i]
+            }
+        }
+    }
+
+    /// Draws a single visual line centered on `center` (no line-break handling,
+    /// no capture hook).
+    private static func drawLine(_ text: String, center: CGPoint, size: CGFloat,
+                                 weight: PlatformFont.Weight, color: PlatformColor, in context: CGContext) {
         #if canImport(AppKit) || canImport(UIKit)
         let attributed = NSAttributedString(string: text, attributes: [
             kCTFontAttributeName as NSAttributedString.Key: font(size, weight: weight),
