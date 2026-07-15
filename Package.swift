@@ -4,14 +4,32 @@ import PackageDescription
 // MermaidKit — native Mermaid diagram parsing, layout, and rendering.
 // MermaidLayout is platform-free geometry (parse → layout → scene IR + a
 // geometric layout linter). MermaidRender draws with CoreGraphics/CoreText on
-// Apple platforms, and with Silica (Cairo/FontConfig) on Linux. No JavaScript,
-// no WebView.
+// Apple platforms, and — WHEN OPTED IN — with Silica (Cairo/FontConfig) on
+// Linux. No JavaScript, no WebView.
 //
-// The Silica stack is a Linux-only rendering backend: on Apple platforms
-// CoreGraphics/CoreText are used and these products are never linked. Pulling
-// Silica into the graph is why the toolchain floor is Swift 6.2 (its transitive
-// PureSwift/Android dependency requires 6.2, and SwiftPM parses every manifest
-// in the graph regardless of platform).
+// ── Why the Silica backend is behind a trait (`LinuxRaster`, default OFF) ──
+// Silica pins its Cairo/FontConfig stack to `branch: master` (an unstable,
+// non-versioned dependency), and SwiftPM forbids a package consumed via a
+// stable version tag (`from: "0.x.0"`) from transitively depending on a
+// branch/revision: the downstream resolve fails outright with
+//   "mermaidkit depends on an unstable-version package 'silica' …".
+// That made every tagged MermaidKit release UNCONSUMABLE by a normal
+// `from:`-pinned host (this is what stranded Quoin on 0.10.0).
+//
+// Even when the Silica products were merely platform-conditioned
+// (`.when(platforms: [.linux])`), SwiftPM still RESOLVED (fetched) Silica and
+// its entire transitive graph — Cairo, FontConfig, plus the PureSwift/Android,
+// Kotlin, JavaScriptKit, swift-java and swift-syntax trees — on ALL platforms,
+// including macOS/iOS consumers that never link a single Silica symbol.
+//
+// Package traits (SwiftPM 6.1+) fix BOTH: the Silica dependency and the
+// SilicaCairo/Cairo product links are guarded by the `LinuxRaster` trait, which
+// is NOT in the default set. A consumer that doesn't opt in gets a graph with
+// ZERO Silica/Cairo/branch dependencies — so a stable `from:` resolve is clean
+// on every platform, and Apple hosts never drag in the Linux raster stack.
+// Linux users who WANT the native raster backend enable the trait, e.g.
+//   .package(url: "…/MermaidKit", from: "0.12.0", traits: ["LinuxRaster"])
+// or build/test with `--traits LinuxRaster`.
 let package = Package(
     name: "MermaidKit",
     platforms: [.macOS(.v14), .iOS(.v17), .visionOS(.v1)],
@@ -19,10 +37,19 @@ let package = Package(
         .library(name: "MermaidLayout", targets: ["MermaidLayout"]),
         .library(name: "MermaidRender", targets: ["MermaidRender"]),
     ],
+    traits: [
+        .trait(
+            name: "LinuxRaster",
+            description: "Link the Silica/Cairo raster rendering backend (Linux only). "
+                + "Off by default so no-trait consumers keep a Silica-free dependency graph."
+        ),
+    ],
     dependencies: [
-        // Silica and its Cairo backend track `master` (Silica itself depends on
-        // Cairo by branch, so a stable version requirement can't be mixed in);
-        // Package.resolved pins the exact commits for reproducibility.
+        // Guarded by `LinuxRaster`: when the trait is disabled (the default)
+        // these are pruned from resolution entirely — no branch dependency
+        // reaches a downstream `from:` consumer, and no Cairo/PureSwift graph is
+        // fetched on Apple platforms. `Package.resolved` pins exact commits for
+        // reproducibility when the trait IS enabled.
         .package(url: "https://github.com/PureSwift/Silica.git", branch: "master"),
         .package(url: "https://github.com/PureSwift/Cairo.git", branch: "master"),
     ],
@@ -32,8 +59,14 @@ let package = Package(
             name: "MermaidRender",
             dependencies: [
                 "MermaidLayout",
-                .product(name: "SilicaCairo", package: "Silica", condition: .when(platforms: [.linux])),
-                .product(name: "Cairo", package: "Cairo", condition: .when(platforms: [.linux])),
+                // Both the platform AND the trait must hold: Apple platforms use
+                // CoreGraphics/CoreText and never link these even with the trait
+                // on; the trait gate is what keeps Silica out of the resolved
+                // graph for every no-trait consumer.
+                .product(name: "SilicaCairo", package: "Silica",
+                         condition: .when(platforms: [.linux], traits: ["LinuxRaster"])),
+                .product(name: "Cairo", package: "Cairo",
+                         condition: .when(platforms: [.linux], traits: ["LinuxRaster"])),
             ],
             path: "Sources/MermaidRender"),
         .testTarget(name: "MermaidLayoutTests", dependencies: ["MermaidLayout"], path: "Tests/MermaidLayoutTests"),
