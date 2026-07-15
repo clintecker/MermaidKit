@@ -4,6 +4,3 @@ DerivedData/
 *.xcodeproj
 .DS_Store
 Package.resolved
-
-# LinuxGoldenTests failure artifacts (uploaded by CI, not committed)
-/.golden-failures/

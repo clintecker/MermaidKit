@@ -52,17 +52,6 @@ The porting approach is written up in
 `docs/notes/linux-rendering-via-silica.md`. The toolchain floor is Swift 6.2 /
 Xcode 26 — package traits (and Silica's graph, when enabled) require it.
 
-`LinuxGoldenTests` compares every Linux render against a committed reference
-image in `Tests/MermaidRenderTests/__golden__/` — the pixel-level backstop for
-appearance drift the geometry linter can't see. The references are
-environment-specific (FreeType/Cairo anti-aliasing depends on the runner's CPU +
-library build), so they're generated *by CI, on the runner*: after a change that
-*intentionally* alters how a fixture renders, run the **Regenerate goldens**
-GitHub Actions workflow (Actions ▸ Regenerate goldens ▸ Run workflow) — it
-renders on the CI runner and commits the images back, and reviewing that commit
-is the review. `UPDATE_GOLDENS=1 scripts/test-linux.sh` regenerates locally for
-iteration on matching hardware, but only CI-produced goldens pass CI.
-
 ## API stability stance
 
 The wide public surface — every model and layout struct — is deliberate:

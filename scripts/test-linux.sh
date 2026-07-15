@@ -15,11 +15,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# Pin arm64: LinuxGoldenTests' reference images are architecture-specific
-# (FreeType/Cairo rasterize differently per arch) and are committed as arm64 —
-# the CI runner is arm64 too. On an arm64 host this is native; on x86_64 it
-# needs Docker's binfmt/QEMU emulation (slower, but keeps goldens consistent).
-docker run --rm --platform linux/arm64 \
+docker run --rm \
   -v "$PWD":/pkg \
   -v mermaidkit-linux-build:/pkg/.build \
   -w /pkg swift:6.2 bash -euc '
@@ -32,9 +28,6 @@ docker run --rm --platform linux/arm64 \
     fc-cache -f >/dev/null
     swift --version
     swift build --traits LinuxRaster
-    # Fixed hash seed so rendering is reproducible across process launches —
-    # required by LinuxGoldenTests (see its header).
-    export SWIFT_DETERMINISTIC_HASHING=1
     swift test --traits LinuxRaster
     # The platform-free core must ALSO build with the default (Silica-free)
     # graph — the configuration a headless from:-pinned consumer resolves.
