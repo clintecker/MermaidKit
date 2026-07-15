@@ -64,12 +64,26 @@ final class AdversarialInputTests: XCTestCase {
 
     func testOversizedInputsRejectedFast() {
         // Past mermaid.js-style caps (maxTextSize / maxEdges) the parser must
-        // return nil immediately, not feed a super-linear layout for seconds.
+        // return nil after a linear scan, NOT feed the super-linear layout.
+        // Guard that relative to a valid parse on THIS machine, not an absolute
+        // wall-clock (which flakes under CI variance): rejecting a 4×-over-cap
+        // input must not cost dramatically more than parsing a valid one — a
+        // regression that eagerly laid it out would be orders of magnitude
+        // slower. Best-of-3 baseline to shrug off a single scheduling hiccup.
+        var valid = "flowchart TD\n"
+        for i in 0..<400 { valid += " n\(i) --> n\(i + 1)\n" }   // under the 500-edge cap
+        let baseline = (0..<3).map { _ -> TimeInterval in
+            let t = Date(); _ = MermaidParser.parse(valid); return Date().timeIntervalSince(t)
+        }.min() ?? 0
+
         var flow = "flowchart TD\n"
         for i in 0..<2_000 { flow += " n\(i) --> n\(i + 1)\n" }
         let start = Date()
         XCTAssertNil(MermaidParser.parse(flow), "past-cap input returns nil")
-        XCTAssertLessThan(Date().timeIntervalSince(start), 0.5, "rejection must be fast")
+        let reject = Date().timeIntervalSince(start)
+        // ~5× baseline is the honest linear cost (2000 vs 400 lines); 20× gives
+        // wide headroom for noise while still catching a layout-ran regression.
+        XCTAssertLessThan(reject, max(0.5, baseline * 20), "rejection must stay near parse cost, not run layout")
 
         let huge = "flowchart TD\n" + String(repeating: " a --> b\n", count: 10_000)
         XCTAssertNil(MermaidParser.parse(huge), "over maxTextSize returns nil")
