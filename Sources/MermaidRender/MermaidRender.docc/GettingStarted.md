@@ -73,7 +73,7 @@ if MermaidRenderer.image(source: source, theme: theme) == nil {
 
 ## What parses, what doesn't
 
-23 diagram types parse their core syntax. Styling and interaction
+30 diagram types parse their core syntax. Styling and interaction
 directives from mermaid.js (`%%{init:}%%`, `classDef`, `style`, `click`…)
 are **ignored, not fatal** — the diagram renders with your
 ``DiagramTheme`` instead. Unknown dialects return `nil`. Input is bounded

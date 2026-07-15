@@ -1,7 +1,7 @@
 # Adding a Diagram Type
 
 The end-to-end walkthrough: every diagram type is five small files and
-three dispatch lines, and the pattern repeats 23 times in this package —
+three dispatch lines, and the pattern repeats 30 times in this package —
 copy the nearest neighbor.
 
 ## The five files

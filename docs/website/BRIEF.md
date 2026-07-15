@@ -289,5 +289,6 @@ Install:
 Single page, static HTML/CSS, fast on a phone, light/dark aware. The
 diagrams are colorful; keep the chrome quiet around them. **No analytics
 or trackers** — the library's privacy story is "no network" and the site
-must live up to it. Don't claim SVG output, Linux rendering, or full
-mermaid.js syntax parity.
+must live up to it. Don't claim SVG output or full mermaid.js syntax parity.
+(Linux rendering *is* real as of v0.11.0 — MermaidRender draws via Silica/Cairo
+there; this brief otherwise reflects the v0.8.0 snapshot noted above.)

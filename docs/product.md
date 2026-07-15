@@ -14,15 +14,15 @@ Feature groups are labeled **G1–G9** and referenced by shorthand throughout.
 | Key | Value |
 | :--- | :--- |
 | Name | MermaidKit |
-| Definition | A native Swift library that parses, lays out, and renders [Mermaid](https://mermaid.js.org) diagrams. The diagram source is the input; the library produces typed models, pure geometry (a scene IR), and — on Apple platforms — drawn images and PDF. No JavaScript, no WebView, no Mermaid.js. |
-| Status | Pre-release, active development. Latest tag `v0.10.0`. Rendering ships on Apple platforms; `MermaidLayout` is platform-free and builds + tests on Linux. |
+| Definition | A native Swift library that parses, lays out, and renders [Mermaid](https://mermaid.js.org) diagrams. The diagram source is the input; the library produces typed models, pure geometry (a scene IR), and drawn images and PDF — on Apple platforms via CoreGraphics/CoreText, on Linux via Silica (Cairo/FontConfig). No JavaScript, no WebView, no Mermaid.js. |
+| Status | Pre-release, active development. Latest tag `v0.11.0` (adds the Linux rendering backend). Rendering ships on Apple platforms and Linux; `MermaidLayout` is platform-free. |
 | Repository | github.com/clintecker/MermaidKit |
-| Platforms | Rendering: macOS 14+, iOS 17+, visionOS 1+. Geometry (`MermaidLayout`): platform-free — builds and tests on Linux (swift-corelibs-foundation). |
-| Language / runtime | Swift 6 (`swift-tools-version: 6.0`, strict concurrency). CoreGraphics + CoreText for drawing on Apple platforms. Zero JavaScript at runtime; local-only. |
-| Rendering | Native attributed-geometry pipeline: parse → layout → common scene IR → CoreGraphics/CoreText draw. No web view, no headless browser, no Mermaid.js. |
-| Dependencies | **Zero** third-party packages. `MermaidRender` depends only on `MermaidLayout`; `MermaidLayout` depends on nothing (`Package.swift`). |
+| Platforms | Rendering: macOS 14+, iOS 17+, visionOS 1+ (CoreGraphics/CoreText); Linux (Silica/Cairo). Geometry (`MermaidLayout`): platform-free — builds and tests on any swift-corelibs-foundation target. |
+| Language / runtime | Swift 6 (`swift-tools-version: 6.2`, strict concurrency; the Silica backend's transitive graph sets a Swift 6.2 / Xcode 26 floor). Drawing via CoreGraphics/CoreText on Apple, Silica/Cairo on Linux. Zero JavaScript at runtime; local-only. |
+| Rendering | Native geometry pipeline: parse → layout → common scene IR → draw. Both backends share the layout and per-type draw code; only the platform surface (CoreGraphics vs Silica) differs. No web view, no headless browser, no Mermaid.js. |
+| Dependencies | Zero third-party packages on Apple. On Linux the render backend adds Silica (Cairo/FontConfig); `MermaidLayout` depends on nothing. |
 | Coverage | **30 distinct diagram types** (`MermaidDiagram` enum, 30-branch parser dispatch, 30-row README matrix, 30 fixtures). |
-| Verification | 179 package tests, 0 failures (2 intentionally env-gated skips); the `MermaidLayout` suite (158 tests) runs headless on Linux. |
+| Verification | 179 package tests on macOS, 0 failures (2 intentionally env-gated skips). On Linux, 163 tests run in a `swift:6.2` container — the `MermaidLayout` suite plus Silica render smoke tests (all 30 fixtures render). |
 | Origin | Built so that a diagram's source of truth stays the Mermaid text — parsed, laid out, and drawn natively in a Swift app — with layout judged by machine-checkable geometry rather than pixels, and with no runtime dependency on a JavaScript engine or web view. Consumed by the Quoin markdown editor as a first-party engine. |
 
 ---
@@ -105,10 +105,12 @@ design in `SceneGeometryAndLinting.md`.
 | Scene delta | `SceneDelta` reports moved/added/removed nodes (with displacement vectors), rerouted edges, and canvas resize, with a one-line human summary (e.g. `+2 nodes · 3 nodes moved (max 14pt)`). |
 | Lint delta / verdict | `LintDelta` reports which violations a change cleared vs introduced and returns a verdict — `✓ fixed`, `✗ regressed (+N errors)`, `↓ improved`, or `= no error change` — the machine-readable "did this change help?" signal, above a pixel pdiff. |
 
-### G5 — Native rendering (Apple platforms)
+### G5 — Native rendering
 
-CoreGraphics/CoreText drawing of the scene, one theme value re-skinning every
-type. `MermaidRender` target (macOS 14+, iOS 17+, visionOS 1+).
+Drawing of the scene with one theme value re-skinning every type — CoreGraphics/
+CoreText on Apple (macOS 14+, iOS 17+, visionOS 1+), Silica (Cairo/FontConfig)
+on Linux. The `MermaidRender` target; both backends share the layout and
+per-type draw code, so a diagram type reaches every platform at once.
 
 | Feature | Specific |
 | :--- | :--- |
@@ -141,7 +143,7 @@ and linting, with text measurement injected. DocC: `HeadlessLayout.md`.
 | Injected measurement | Layout refuses to know about fonts: a `DiagramTextMeasurer` closure is the sole text-metrics seam, so the same measurer feeds layout, lowering, linting, and drawing — geometry sees exactly what the renderer paints. |
 | Public seams | `MermaidParser.parse`, `DiagramLayoutEngine.layout(_:measure:spacing:)`, `DiagramScene.lower`, `DiagramLayoutLinter.lint`/`.delta`, `MermaidAltText.describe` — each usable without any renderer. |
 | Interop by construction | Because the input is Mermaid text and the output is a typed model + inspectable scene IR + lint report, any tool that emits Mermaid drives MermaidKit, and any tool can reason over the geometry programmatically. |
-| Compilation-target research | `docs/notes/ir-compilation-targets.md` explores lowering the same IR to targets beyond NSImage/UIImage (the seam a future SVG/Linux backend reuses). |
+| Compilation-target research | `docs/notes/ir-compilation-targets.md` explores lowering the same IR to targets beyond NSImage/UIImage. The Linux/Silica backend (`docs/notes/linux-rendering-via-silica.md`) is the first realized instance of that seam; a future SVG backend would reuse it. |
 
 ### G8 — Fidelity & determinism guarantees
 
@@ -153,15 +155,15 @@ Named properties with dedicated tests, run on every CI build.
 | Deterministic layout | The same source yields identical geometry across runs; a same-width rename moves nothing; appending a leaf has bounded blast radius (`StabilityTests`). |
 | Straight spines | Brandes–Köpf balancing plus model-order tie-breaks keep single-parent chains straight (`ChainAlignmentTests`). |
 | Geometry linting in CI | Every fixture lints clean over exact geometry on every run (`LayoutLintTests`); the `edge-cuts-label` invariant has its own suite. |
-| Platform-free contract | The Linux CI job proves `MermaidLayout` builds and tests without CoreGraphics — the guard that caught a `CGVector` portability break. |
+| Platform-free contract | The Linux CI job proves `MermaidLayout` builds and tests without CoreGraphics (the guard that caught a `CGVector` portability break) — and now also builds + renders `MermaidRender` via Silica. |
 
 ### G9 — Engineering & verification
 
 | Feature | Specific |
 | :--- | :--- |
 | Test suite | 179 package tests, 0 failures (2 intentionally env-gated skips: doc-image generation and single-type lint). 160 layout tests, 19 render tests. |
-| Cross-platform | The `MermaidLayout` suite (158 tests) is green on Linux (swift:6.0 container); render targets fold to empty modules off-Apple so the platform-free contract is compiler-enforced. |
-| CI | `test` (macOS): `swift build` + `swift test` on newest Xcode 16, plus a compile-only iOS-Simulator guard (a UIKit branch with no test host that must always compile). `linux`: `swift build` + `swift test` in a `swift:6.0` container. |
+| Cross-platform | 163 tests green on Linux (`swift:6.2` container): the `MermaidLayout` suite plus the Silica render smoke tests (all 30 fixtures render). `MermaidLayout` still builds on bare swift-corelibs-foundation, so the platform-free contract stays compiler-enforced. |
+| CI | `test` (macOS): `swift build` + `swift test` on Xcode 26, plus a compile-only iOS-Simulator guard (a UIKit branch with no test host that must always compile). `linux`: installs Cairo/FontConfig, then `swift build` + `swift test` in a `swift:6.2` container. |
 | Parser honesty | `ParserHonestyTests` (41 tests) pins that syntax once silently dropped or mangled now parses faithfully; `AdversarialInputTests` (11) that hostile input never crashes. |
 | Benchmarks | `RenderBenchmarks` guards end-to-end parse→layout→render timing (the "interactive time" claim). |
 | Documentation | DocC catalogs for both targets (8 articles) plus `README.md`, `docs/GALLERY.md`, and three preserved design memos in `docs/notes/`. |
@@ -219,10 +221,8 @@ Feature groups G1–G9 are self-indexing by shorthand; a marketing or docs surfa
 can lift any single group as a standalone section, and the Approach table and
 Asset Inventory are each usable independently. Numeric claims (type count, test
 counts, input caps, image counts) should be re-pulled from the cited sources at
-publish time, as they move with the codebase. Two caveats to verify at publish:
-the `MermaidRender` DocC `Theming.md` still says "23 diagram types" while the
-authoritative count (enum, dispatch, README matrix, fixtures) is **30** — use 30;
-and **Linux rendering is not a shipping capability** — today `MermaidRender` is
-Apple-only and `MermaidLayout` is the Linux-buildable half. (A Cairo-backed Linux
-rendering backend is in active development but is not yet released; do not claim
-it, per `docs/website/BRIEF.md`.)
+publish time, as they move with the codebase. One caveat: the authoritative
+diagram-type count is **30** (enum, dispatch, README matrix, fixtures) — if any
+older doc still says "23", use 30. Linux rendering shipped in **v0.11.0**
+(MermaidRender via Silica/Cairo); the still-outstanding portability item is an
+SVG backend, not Linux.

@@ -1,6 +1,28 @@
 # Changelog
 
-## Unreleased
+## 0.11.0
+
+Native rendering on **Linux**. `MermaidRender` now draws with Silica
+(Cairo/FontConfig) as well as CoreGraphics/CoreText, sharing the exact layout
+and per-type draw code — all 30 diagram types render to PNG and PDF headless on
+swift-corelibs-foundation. See `docs/notes/linux-rendering-via-silica.md`.
+
+- **Toolchain floor is now Swift 6.2 / Xcode 26.** The manifest moved to
+  `swift-tools-version: 6.2`: Silica's transitive dependency graph requires it,
+  and SwiftPM parses every manifest in the graph regardless of platform. All
+  consumers must build with Swift 6.2+.
+- `SilicaCairo` + `Cairo` are **Linux-only** target dependencies; on Apple they
+  are never linked (CoreGraphics/CoreText are used, output unchanged).
+- On Linux, `MermaidRenderer.image(...)` returns a `PlatformImage` with
+  `pngData()` / `writePNG(to:)`; `pdfData(...)` works via Cairo's PDF surface.
+  `attachmentString` (NSTextAttachment) stays Apple-only.
+- **Fix Linux build** (#2): a public `CGVector` shim for swift-corelibs-foundation
+  (which lacks it); a Linux CI job (`swift:6.2` + Cairo/FontConfig) that builds
+  and tests the whole package, compiler-enforcing the platform-free contract.
+- Flowchart cycle back-edge (#1): regression tests pinning that every edge
+  attaches to its nodes and that node re-declaration matches mermaid.js.
+
+## 0.10.0
 
 Front-matter and accessibility metadata are first-class. Previously the
 YAML front-matter block was stripped wholesale (its `title:` discarded) and

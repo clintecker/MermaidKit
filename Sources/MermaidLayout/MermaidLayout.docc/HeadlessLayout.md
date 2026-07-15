@@ -36,7 +36,7 @@ case .flowchart(let chart):
 default: …
 }
 
-// Or the type-erased scene IR — one shape for all 23 types:
+// Or the type-erased scene IR — one shape for all 30 types:
 let scene = DiagramScene.lower(diagram, measure: measurer)
 ```
 
@@ -45,7 +45,7 @@ let scene = DiagramScene.lower(diagram, measure: measurer)
 ``DiagramScene`` (or the richer per-type layout structs) is the contract a
 non-CoreGraphics backend consumes: parse → layout → walk the geometry →
 emit SVG/HTML canvas/PDF primitives. Parsing and layout stay shared, so a
-new backend inherits all 23 types and the linter's guarantees for free.
+new backend inherits all 30 types and the linter's guarantees for free.
 This is the most-wanted contribution — see the repository's CONTRIBUTING.
 
 ## Programmatic diagrams

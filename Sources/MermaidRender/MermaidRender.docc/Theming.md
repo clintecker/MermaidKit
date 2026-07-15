@@ -1,7 +1,7 @@
 # Theming
 
 Every color a diagram wears comes from one value: ``DiagramTheme``. Replace
-it to re-skin all 23 diagram types at once.
+it to re-skin all 30 diagram types at once.
 
 ## Anatomy of a theme
 

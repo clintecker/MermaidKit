@@ -1,8 +1,9 @@
 # MermaidKit
 
-Native [Mermaid](https://mermaid.js.org) diagrams for Apple platforms — no
-JavaScript, no WebView, no dependencies. Parse, lay out, and render **30
-Mermaid diagram types** in pure Swift and CoreGraphics.
+Native [Mermaid](https://mermaid.js.org) diagrams in pure Swift — no
+JavaScript, no WebView. Parse, lay out, and render **30 Mermaid diagram
+types**, drawn with CoreGraphics/CoreText on Apple platforms and with Silica
+(Cairo/FontConfig) on Linux.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.png">
@@ -190,7 +191,9 @@ Two targets:
   (frames, polylines). Text measurement is injected (`DiagramTextMeasurer`),
   so layout is fully testable without a display server.
 - **MermaidRender** — CoreGraphics/CoreText drawing on macOS 14+, iOS 17+,
-  and visionOS 1+. Building the package requires Xcode 16+ (Swift 6 tools).
+  and visionOS 1+, and Silica (Cairo/FontConfig) drawing on Linux. Building the
+  package requires Xcode 26 / Swift 6.2 (the Silica backend's dependency graph
+  sets that toolchain floor).
   The styling inputs are `DiagramTheme` (six colors, a categorical palette,
   and a dark-mode flag) and `DiagramSpacing` (layout density).
 
@@ -222,7 +225,7 @@ layout. Contributions welcome.
   (`.compact` / `.regular` / `.comfortable`, or custom gaps — consulted by
   flowchart, class, ER, state, and architecture layouts).
 - `DiagramTheme` — six colors + a categorical `palette` (node tints, pie
-  slices, sankey bands…); override the palette to re-skin all 23 types at
+  slices, sankey bands…); override the palette to re-skin all 30 types at
   once. See the Theming article in the DocC docs.
 - `MermaidRenderer.image(source:theme:spacing:)` — one-shot render,
   auto-sized; `renderImage(...)` is the async sibling that renders off the
@@ -258,10 +261,11 @@ and the most-wanted list.
 
 ## FAQ
 
-**Why is rendering Apple-only?** The layout target already builds without
-AppKit/UIKit — only the CoreGraphics/CoreText drawing is platform-bound. An
-SVG backend over the scene IR would make the whole pipeline portable; it's
-the most-wanted contribution.
+**Does it render on Linux?** Yes, since v0.11.0 — `MermaidRender` draws with
+Silica (Cairo/FontConfig) on Linux, sharing the exact layout and per-type draw
+code as the Apple backend (`docs/notes/linux-rendering-via-silica.md`). The
+layout target (`MermaidLayout`) was always platform-free. A vector SVG backend
+over the scene IR is still wanted — it's the most-requested contribution.
 
 **Why doesn't the output look exactly like mermaid.js?** Deliberate.
 MermaidKit renders diagrams in a native Apple aesthetic (system fonts, your

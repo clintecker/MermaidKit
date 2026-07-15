@@ -1,14 +1,16 @@
 # ``MermaidRender``
 
-Draw Mermaid diagrams natively with CoreGraphics — SwiftUI views, images,
-and text-view attachments, themed by a single value.
+Draw Mermaid diagrams natively — SwiftUI views, images, and text-view
+attachments, themed by a single value.
 
 ## Overview
 
 `MermaidRender` is the drawing half of MermaidKit. It consumes the geometry
 produced by `MermaidLayout` and renders it with CoreGraphics/CoreText on
-macOS, iOS, iPadOS, and visionOS. There is no JavaScript, no WebView, and no
-dependency beyond `MermaidLayout` itself.
+macOS, iOS, iPadOS, and visionOS, and with Silica (Cairo/FontConfig) on Linux —
+the same layout and per-type draw code backs both. There is no JavaScript and
+no WebView; on Apple the only dependency is `MermaidLayout`, and on Linux the
+render backend additionally links Silica.
 
 Three ways in, from highest-level to lowest:
 
