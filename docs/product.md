@@ -15,7 +15,7 @@ Feature groups are labeled **G1–G9** and referenced by shorthand throughout.
 | :--- | :--- |
 | Name | MermaidKit |
 | Definition | A native Swift library that parses, lays out, and renders [Mermaid](https://mermaid.js.org) diagrams. The diagram source is the input; the library produces typed models, pure geometry (a scene IR), and drawn images and PDF — on Apple platforms via CoreGraphics/CoreText, on Linux via Silica (Cairo/FontConfig). No JavaScript, no WebView, no Mermaid.js. |
-| Status | Pre-release, active development. Latest tag `v0.11.0` (adds the Linux rendering backend). Rendering ships on Apple platforms and Linux; `MermaidLayout` is platform-free. |
+| Status | Pre-release, active development. Latest tag `v0.12.0` (Linux rendering backend gated behind the `LinuxRaster` package trait, so no-trait consumers keep a Silica-free graph). Rendering ships on Apple platforms and Linux; `MermaidLayout` is platform-free. |
 | Repository | github.com/clintecker/MermaidKit |
 | Platforms | Rendering: macOS 14+, iOS 17+, visionOS 1+ (CoreGraphics/CoreText); Linux (Silica/Cairo). Geometry (`MermaidLayout`): platform-free — builds and tests on any swift-corelibs-foundation target. |
 | Language / runtime | Swift 6 (`swift-tools-version: 6.2`, strict concurrency; the Silica backend's transitive graph sets a Swift 6.2 / Xcode 26 floor). Drawing via CoreGraphics/CoreText on Apple, Silica/Cairo on Linux. Zero JavaScript at runtime; local-only. |

@@ -15,7 +15,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-docker run --rm \
+# Pin arm64: LinuxGoldenTests' reference images are architecture-specific
+# (FreeType/Cairo rasterize differently per arch) and are committed as arm64 —
+# the CI runner is arm64 too. On an arm64 host this is native; on x86_64 it
+# needs Docker's binfmt/QEMU emulation (slower, but keeps goldens consistent).
+docker run --rm --platform linux/arm64 \
   -v "$PWD":/pkg \
   -v mermaidkit-linux-build:/pkg/.build \
   -w /pkg swift:6.2 bash -euc '

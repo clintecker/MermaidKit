@@ -46,11 +46,17 @@ jobs:
 
   linux:
     name: swift test (Linux)
-    runs-on: ubuntu-latest
+    # ARM64 runner: FreeType/Cairo rasterize differently per architecture, so
+    # LinuxGoldenTests' reference images are arch-specific. They're generated on
+    # arm64 (the maintainer's machine + `scripts/test-linux.sh`, which pins
+    # `--platform linux/arm64`), so CI must render on arm64 too or every fixture
+    # drifts ~1-4%. GitHub's arm64 Linux runners are native (no emulation).
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     # Digest-pinned (not the moving `swift:6.2` tag) so the Cairo/FreeType
-    # rasterization environment can't drift underneath LinuxGoldenTests'
-    # reference images. Bump deliberately alongside `UPDATE_GOLDENS=1`.
+    # rasterization environment can't drift underneath the goldens. The digest
+    # is a multi-arch manifest; on this arm64 runner it resolves to the arm64
+    # image. Bump deliberately alongside `UPDATE_GOLDENS=1`.
     container: swift@sha256:dd349c6dfc3cd3040910a84ab3e5bd5d08efdd547e5fb9f77b765abed16fe5ff
     steps:
       - uses: actions/checkout@v4
