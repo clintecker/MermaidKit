@@ -18,6 +18,9 @@ public enum MermaidRenderer {
     /// recognized Mermaid diagram. The image auto-sizes to the diagram bounds.
     public static func image(source: String, theme: DiagramTheme,
                              spacing: DiagramSpacing = .regular) -> PlatformImage? {
+        // Apple pulls the image back out of the cached attachment string; Linux
+        // has no NSTextAttachment, so it renders directly (and uncached) via the
+        // Silica backend. Same return type, different path.
         #if canImport(AppKit) || canImport(UIKit)
         guard let attr = attachmentString(source: source, theme: theme, spacing: spacing),
               attr.length > 0,

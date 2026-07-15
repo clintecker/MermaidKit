@@ -70,7 +70,9 @@ func rgbStatic(_ hex: UInt32, alpha: CGFloat = 1) -> PlatformColor {
 /// API parity with the Apple backend.)
 func themeDynamic(light: PlatformColor, dark: PlatformColor) -> PlatformColor { light }
 
-/// The color as a Silica `CGColor` for fills/strokes.
+/// The color as a Silica `CGColor` for fills/strokes. Unlike the AppKit twin
+/// (`Platform.swift`), no sRGB / appearance resolution is needed: `PlatformColor`
+/// is already a fixed sRGB value here.
 func resolvedCGColor(_ color: PlatformColor) -> Silica.CGColor {
     Silica.CGColor(red: color.red, green: color.green, blue: color.blue, alpha: color.alpha)
 }
@@ -84,9 +86,13 @@ func resolvedCGColor(_ color: PlatformColor) -> Silica.CGColor {
 /// as its measurement.
 public struct PlatformFont: Sendable {
     public enum Weight: Sendable { case regular, medium, semibold, bold }
-    /// The FontConfig family name for a weight ("DejaVu Sans" is present in the
-    /// minimal container image; FontConfig substitutes for the platform's
-    /// default sans otherwise).
+    /// The FontConfig *pattern* (not a bare family name) for a weight, passed to
+    /// `CGFont(name:)`: the `:bold` suffix is FontConfig syntax selecting the
+    /// bold face. "DejaVu Sans" is present in the minimal container image;
+    /// FontConfig substitutes the platform's default sans otherwise. Medium and
+    /// semibold aren't distinguished from regular/bold here — FontConfig has no
+    /// closer face in the base image, and diagram chrome doesn't lean on the
+    /// intermediate weights the way body text would.
     static func familyName(_ weight: Weight) -> String {
         switch weight {
         case .regular, .medium: return "DejaVu Sans"
@@ -95,6 +101,13 @@ public struct PlatformFont: Sendable {
     }
 }
 
+/// Process-wide cache of FontConfig-resolved fonts. The `NSLock` fully guards
+/// the dictionary; the cached `CGFont` values are then used concurrently by the
+/// async render path (`renderImage` runs on a detached task), each drawing into
+/// its own context but sharing the font. That is sound because the underlying
+/// Cairo `ScaledFont` / FreeType face carry their own internal locking — the
+/// `@unchecked Sendable` rests on that library guarantee, not on this lock,
+/// which only protects the `store` dictionary.
 private final class FontCache: @unchecked Sendable {
     static let shared = FontCache()
     private var store: [String: Silica.CGFont] = [:]
@@ -127,7 +140,11 @@ public struct PlatformImage: @unchecked Sendable {
         self.surface = surface; self.size = size
     }
 
-    /// PNG-encoded bytes, or nil if encoding fails.
+    /// PNG-encoded bytes, or nil if encoding fails. Silica's Cairo surface only
+    /// vends `writePNG(atPath:)` — there is no in-memory PNG encoder — so the
+    /// bytes must round-trip through a uniquely-named temp file we immediately
+    /// delete. A failed write leaves no readable file, so `Data(contentsOf:)`
+    /// returns nil, which is the contract.
     public func pngData() -> Data? {
         let dir = FileManager.default.temporaryDirectory
         let url = dir.appendingPathComponent("mermaidkit-\(UUID().uuidString).png")
@@ -137,12 +154,17 @@ public struct PlatformImage: @unchecked Sendable {
         return try? Data(contentsOf: url)
     }
 
-    /// Writes the PNG to `path`.
+    /// Writes the PNG to `path`, returning whether a valid PNG landed there.
+    /// `writePNG` is non-throwing and a pre-existing file would make a bare
+    /// `fileExists` check a false positive, so confirm the write by reading back
+    /// the 8-byte PNG signature (cheap; a failed/partial write won't match).
     @discardableResult
     public func writePNG(to path: String) -> Bool {
         surface.flush()
         surface.writePNG(atPath: path)
-        return FileManager.default.fileExists(atPath: path)
+        guard let handle = FileHandle(forReadingAtPath: path) else { return false }
+        defer { try? handle.close() }
+        return handle.readData(ofLength: 8) == Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
     }
 }
 
@@ -173,10 +195,12 @@ extension Silica.CGContext {
 // MARK: - CGPath convenience initializers (Apple-shaped, over CGMutablePath)
 
 extension Silica.CGPath {
-    /// A rounded rectangle, corners approximated with quad curves (Silica's
-    /// `CGMutablePath` has no arc primitive). `cornerWidth`/`cornerHeight` are
-    /// clamped to half the rect; `transform` is accepted for call-site parity
-    /// and unused (every renderer call passes nil).
+    /// A rounded rectangle, corners approximated with quad curves — a parabolic
+    /// stand-in for the circular quarter-arc, since Silica's `CGMutablePath` has
+    /// no arc primitive. Imperceptible at the small corner radii (~4–8pt) the
+    /// renderer uses. `cornerWidth`/`cornerHeight` are clamped to half the rect;
+    /// `transform` is accepted for call-site parity and unused (every renderer
+    /// call passes nil).
     public convenience init(roundedRect rect: CGRect, cornerWidth: CGFloat,
                             cornerHeight: CGFloat, transform: UnsafePointer<CGAffineTransform>? = nil) {
         let rx = Swift.min(cornerWidth, rect.width / 2)

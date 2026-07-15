@@ -35,6 +35,8 @@ extension DiagramRenderer {
         // `descent` is negative below the baseline, so height = ascent − descent
         // is the full em span (matching the ascent+descent Apple returns).
         guard let f = linuxFont(weight) else {
+            // Last-resort estimate if FontConfig resolves nothing (no font in
+            // the image): ~0.6em average glyph advance. Unreached in practice.
             return CGSize(width: CGFloat(text.count) * size * 0.6, height: size + 4)
         }
         return CGSize(width: f.singleLineWidth(text: text, fontSize: size),

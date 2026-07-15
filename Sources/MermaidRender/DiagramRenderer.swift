@@ -17,6 +17,10 @@ import UIKit
 /// from the platform-free MermaidLayout engine; this file only draws.
 enum DiagramRenderer {
 
+    // Render cache is Apple-only: it is NSCache-backed and entered via the
+    // attachmentString/NSTextAttachment path. The Linux backend renders directly
+    // and uncached (see `renderImage`); a host batching many diagrams there
+    // should cache the returned PlatformImage itself.
     #if canImport(AppKit) || canImport(UIKit)
     private final class Entry {
         let image: PlatformImage
@@ -260,13 +264,17 @@ enum DiagramRenderer {
             renderPlan(for: diagram, theme: theme, spacing: spacing),
             source: source, diagram: diagram, theme: theme)
         guard let (canvasSize, originX, originY) = paddedCanvas(size: size, edgePolylines: edgePolylines) else { return nil }
-        guard let surface = try? Cairo.Surface.Image(
-            format: .argb32, width: Int(canvasSize.width.rounded(.up)), height: Int(canvasSize.height.rounded(.up))),
+        // The bitmap surface is whole pixels (ceil), so canvasSize is fractional
+        // slightly smaller than the surface. Fill the FULL pixel rect, not
+        // canvasSize, or a <1px transparent strip is left along the right/bottom
+        // edges of the ARGB32 output.
+        let pixelW = canvasSize.width.rounded(.up), pixelH = canvasSize.height.rounded(.up)
+        guard let surface = try? Cairo.Surface.Image(format: .argb32, width: Int(pixelW), height: Int(pixelH)),
               let context = try? CairoContext(surface: surface, size: canvasSize, flipped: true)
         else { return nil }
         // Paint the theme canvas, then the diagram (translated into the pad).
         context.setFillColor(resolvedCGColor(theme.canvas))
-        context.fill(CGRect(origin: .zero, size: canvasSize))
+        context.fill(CGRect(x: 0, y: 0, width: pixelW, height: pixelH))
         context.saveGState()
         context.translateBy(x: originX, y: originY)
         draw(context)

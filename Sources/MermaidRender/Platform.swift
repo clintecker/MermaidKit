@@ -1,3 +1,6 @@
+// Apple rendering backend platform layer (AppKit/UIKit + CoreGraphics). The
+// Linux counterpart — the same PlatformColor/Font/Image surface over Silica —
+// lives in `PlatformLinux.swift`.
 #if canImport(AppKit) || canImport(UIKit)
 import Foundation
 import CoreGraphics
