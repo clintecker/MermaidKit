@@ -7,7 +7,8 @@ One diagram type = three small, independent pieces:
 - `Sources/MermaidLayout/MermaidParser+<Type>.swift` — text → model
 - `Sources/MermaidLayout/DiagramLayout<Type>.swift` — model → geometry
   (frames/polylines; text metrics come in through `DiagramTextMeasurer`)
-- `Sources/MermaidRender/DiagramRenderer+<Type>.swift` — geometry → CoreGraphics
+- `Sources/MermaidRender/DiagramRenderer+<Type>.swift` — geometry → drawing
+  (one `CGContext` seam: CoreGraphics on Apple, Silica/Cairo on Linux)
 
 Plus a lowering (`DiagramScene+<Type>.swift`) that hands the geometry to the
 layout linter.
@@ -25,10 +26,26 @@ layout linter.
   `AdversarialInputTests` — add cases for anything you touch).
 - Performance: `RenderBenchmarks` fails if any fixture renders cold in
   >250 ms.
-- No new dependencies. Layout stays platform-free (`Foundation` +
-  `CoreGraphics` only, `canImport`-guarded).
+- `MermaidLayout` stays zero-dependency and platform-free (`Foundation` +
+  `CoreGraphics` geometry only, `canImport`-guarded — it must keep building on
+  swift-corelibs-foundation). `MermaidRender` is CoreGraphics on Apple and
+  links Silica only on Linux; don't add other dependencies.
 - Regenerate README images with `scripts/gen-gallery.sh` when a fix changes
   how a fixture renders.
+
+## Developing on Linux
+
+`MermaidRender` draws on Linux via Silica (Cairo/FontConfig) — the same layout
+and per-type draw code as Apple. To build and test the whole package the way CI
+does, in a `swift:6.2` container:
+
+    scripts/test-linux.sh   # requires Docker
+
+Check a per-type renderer change on both backends: `swift test` on Apple and
+`scripts/test-linux.sh` for Linux (its `LinuxRenderTests` render every fixture).
+The porting approach is written up in
+`docs/notes/linux-rendering-via-silica.md`. The toolchain floor is Swift 6.2 /
+Xcode 26 — the Silica dependency graph requires it.
 
 ## API stability stance
 
@@ -45,6 +62,7 @@ becoming a semver trap:
 ## Most-wanted
 
 - Syntax-coverage gaps in existing types (bring the diagram that broke).
-- An SVG backend over `DiagramScene` / the layout structs — this makes the
-  pipeline portable beyond Apple platforms.
+- An SVG backend over `DiagramScene` / the layout structs — resolution-
+  independent vector output (the Silica/Cairo backend already covers native
+  Linux rendering; SVG is the remaining portable-output gap).
 - Lower OS floors, with CI to prove them.
