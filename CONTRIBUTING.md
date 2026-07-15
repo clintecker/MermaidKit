@@ -24,8 +24,10 @@ layout linter.
 - **The parser never crashes.** New numeric fields go through
   `MermaidParser.finiteDouble`; new syntax must tolerate garbage (see
   `AdversarialInputTests` — add cases for anything you touch).
-- Performance: `RenderBenchmarks` fails if any fixture renders cold in
-  >250 ms.
+- Performance: `RenderBenchmarks` renders and rasterizes every fixture as a
+  correctness smoke — it never asserts on wall-clock (timing gates flake under
+  CI load). Measure the perf table opt-in with
+  `BENCH_TABLE=1 swift test --filter RenderBenchmarks`.
 - `MermaidLayout` stays zero-dependency and platform-free (`Foundation` +
   `CoreGraphics` geometry only, `canImport`-guarded — it must keep building on
   swift-corelibs-foundation). `MermaidRender` is CoreGraphics on Apple and
