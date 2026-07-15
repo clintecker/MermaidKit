@@ -4,6 +4,11 @@
 # swift:6.2 container. This is how to reproduce/iterate on Linux-only failures
 # (or verify a render change) without pushing. Requires Docker.
 #
+# The Silica backend is behind the `LinuxRaster` package trait (default OFF, so
+# Apple consumers stay Silica-free — see Package.swift), so the build/test here
+# opt in with `--traits LinuxRaster`. The plain-`swift build` of MermaidLayout
+# mirrors CI's check that the platform-free core still builds Silica-free.
+#
 # A named volume caches the build across runs; the Cairo/FontConfig system
 # packages install on each run (~30s) so the container stays stock. See
 # docs/notes/linux-rendering-via-silica.md for how the backend works.
@@ -22,6 +27,9 @@ docker run --rm \
       libcairo2-dev libfontconfig1-dev pkg-config fonts-dejavu-core fontconfig >/dev/null
     fc-cache -f >/dev/null
     swift --version
-    swift build
-    swift test
+    swift build --traits LinuxRaster
+    swift test --traits LinuxRaster
+    # The platform-free core must ALSO build with the default (Silica-free)
+    # graph — the configuration a headless from:-pinned consumer resolves.
+    swift build --target MermaidLayout
   '

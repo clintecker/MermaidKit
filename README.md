@@ -191,11 +191,16 @@ Two targets:
   (frames, polylines). Text measurement is injected (`DiagramTextMeasurer`),
   so layout is fully testable without a display server.
 - **MermaidRender** — CoreGraphics/CoreText drawing on macOS 14+, iOS 17+,
-  and visionOS 1+, and Silica (Cairo/FontConfig) drawing on Linux. Building the
-  package requires Xcode 26 / Swift 6.2 (the Silica backend's dependency graph
-  sets that toolchain floor).
-  The styling inputs are `DiagramTheme` (six colors, a categorical palette,
-  and a dark-mode flag) and `DiagramSpacing` (layout density).
+  and visionOS 1+, and optional Silica (Cairo/FontConfig) drawing on Linux.
+  The Linux raster backend is behind the `LinuxRaster` **package trait** (default
+  OFF): a `from:`-pinned consumer resolves a Silica-free graph on every platform
+  — no unstable branch dependency, and Apple hosts never fetch the Cairo/PureSwift
+  stack. Linux users opt in with `.package(url: …, from: "0.12.0", traits:
+  ["LinuxRaster"])` (or `swift build --traits LinuxRaster`). Building requires
+  Xcode 26 / Swift 6.2 (package traits, and Silica's graph when enabled, set that
+  toolchain floor). The styling inputs are `DiagramTheme` (six colors, a
+  categorical palette, and a dark-mode flag) and `DiagramSpacing` (layout
+  density).
 
 The layered types (flowchart, class, ER, state) use network-simplex layer
 assignment — the same strategy ELK Layered and Graphviz dot default to —

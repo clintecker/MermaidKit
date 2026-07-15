@@ -161,9 +161,10 @@ Named properties with dedicated tests, run on every CI build.
 
 | Feature | Specific |
 | :--- | :--- |
-| Test suite | 179 package tests, 0 failures (2 intentionally env-gated skips: doc-image generation and single-type lint). 160 layout tests, 19 render tests. |
-| Cross-platform | 163 tests green on Linux (`swift:6.2` container): the `MermaidLayout` suite plus the Silica render smoke tests (all 30 fixtures render). `MermaidLayout` still builds on bare swift-corelibs-foundation, so the platform-free contract stays compiler-enforced. |
-| CI | `test` (macOS): `swift build` + `swift test` on Xcode 26, plus a compile-only iOS-Simulator guard (a UIKit branch with no test host that must always compile). `linux`: installs Cairo/FontConfig, then `swift build` + `swift test` in a `swift:6.2` container. |
+| Test suite | 183 package tests, 0 failures (2 intentionally env-gated skips: doc-image generation and single-type lint). 164 layout tests, 19 render tests. |
+| Cross-platform | 163 tests green on Linux (`swift:6.2` container, `--traits LinuxRaster`): the `MermaidLayout` suite plus the Silica render smoke tests (all 30 fixtures render). `MermaidLayout` still builds on bare swift-corelibs-foundation with the default (Silica-free) graph, so the platform-free contract stays compiler-enforced. |
+| Dependency policy | The Silica/Cairo Linux render backend is behind the `LinuxRaster` package trait (default OFF). A `from:`-pinned consumer resolves a Silica-free graph on every platform — no unstable branch dependency, no Cairo/PureSwift stack fetched on Apple. Linux users opt in with `traits: ["LinuxRaster"]`. |
+| CI | `test` (macOS): `swift build` + `swift test` on Xcode 26, plus a compile-only iOS-Simulator guard (a UIKit branch with no test host that must always compile). `linux`: installs Cairo/FontConfig, then `swift build --traits LinuxRaster` + `swift test --traits LinuxRaster`, and a `swift build --target MermaidLayout` proving the default Silica-free graph builds. |
 | Parser honesty | `ParserHonestyTests` (41 tests) pins that syntax once silently dropped or mangled now parses faithfully; `AdversarialInputTests` (11) that hostile input never crashes. |
 | Benchmarks | `RenderBenchmarks` guards end-to-end parse→layout→render timing (the "interactive time" claim). |
 | Documentation | DocC catalogs for both targets (8 articles) plus `README.md`, `docs/GALLERY.md`, and three preserved design memos in `docs/notes/`. |
