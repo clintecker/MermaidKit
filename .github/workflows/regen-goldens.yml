@@ -27,10 +27,14 @@ jobs:
           apt-get install -y --no-install-recommends \
             libcairo2-dev libfontconfig1-dev pkg-config fonts-dejavu-core fontconfig git
           fc-cache -f
+      # Run the WHOLE suite (not --filter): the render is sensitive to test
+      # execution context (a not-yet-fixed layout nondeterminism, issue #3, that
+      # survives SWIFT_DETERMINISTIC_HASHING), so goldens must be produced in the
+      # exact configuration the verifying `swift test (Linux)` job uses.
       - name: Regenerate reference images
         env:
           SWIFT_DETERMINISTIC_HASHING: "1"
-        run: UPDATE_GOLDENS=1 swift test --traits LinuxRaster --filter LinuxGoldenTests
+        run: UPDATE_GOLDENS=1 swift test --traits LinuxRaster
       - name: Commit if changed
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
