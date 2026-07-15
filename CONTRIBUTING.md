@@ -54,13 +54,14 @@ Xcode 26 — package traits (and Silica's graph, when enabled) require it.
 
 `LinuxGoldenTests` compares every Linux render against a committed reference
 image in `Tests/MermaidRenderTests/__golden__/` — the pixel-level backstop for
-appearance drift the geometry linter can't see. If a change *intentionally*
-alters how a fixture renders, regenerate and review the new images:
-
-    UPDATE_GOLDENS=1 scripts/test-linux.sh
-
-The CI container is digest-pinned and the run uses `SWIFT_DETERMINISTIC_HASHING`
-so the goldens stay stable; regenerate whenever either moves deliberately.
+appearance drift the geometry linter can't see. The references are
+environment-specific (FreeType/Cairo anti-aliasing depends on the runner's CPU +
+library build), so they're generated *by CI, on the runner*: after a change that
+*intentionally* alters how a fixture renders, run the **Regenerate goldens**
+GitHub Actions workflow (Actions ▸ Regenerate goldens ▸ Run workflow) — it
+renders on the CI runner and commits the images back, and reviewing that commit
+is the review. `UPDATE_GOLDENS=1 scripts/test-linux.sh` regenerates locally for
+iteration on matching hardware, but only CI-produced goldens pass CI.
 
 ## API stability stance
 

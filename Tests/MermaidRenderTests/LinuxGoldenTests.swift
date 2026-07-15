@@ -19,8 +19,14 @@
 //
 // Comparison is pixel-level with a small per-channel tolerance (decoded through
 // Cairo), so a libcairo/zlib PNG-encoder change alone never trips it — only an
-// actual rasterization change does. Regenerate after an intentional visual
-// change with `UPDATE_GOLDENS=1 scripts/test-linux.sh` and review the diff.
+// actual rasterization change does. The references are ARCHITECTURE- and
+// ENVIRONMENT-specific (FreeType/Cairo AA depends on the CPU + library build),
+// so they must be produced by the SAME environment that verifies them: the
+// Linux CI runner. Regenerate after an intentional visual change by running the
+// "Regenerate goldens" GitHub Actions workflow (it renders on the runner and
+// commits the images back); reviewing the resulting diff is the review. Locally
+// on matching hardware `UPDATE_GOLDENS=1 scripts/test-linux.sh` works for
+// iteration, but only CI-produced goldens are authoritative.
 //
 // REQUIRES `SWIFT_DETERMINISTIC_HASHING=1` (set for the Linux test run in
 // ci.yml and scripts/test-linux.sh). Swift randomizes the Set/Dictionary hash
