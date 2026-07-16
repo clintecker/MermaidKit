@@ -4,3 +4,6 @@ DerivedData/
 *.xcodeproj
 .DS_Store
 Package.resolved
+
+# transient golden-test failure dumps
+.golden-failures/
